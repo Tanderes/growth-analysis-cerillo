@@ -1,0 +1,9 @@
+,1,2,3,4,5,6,7,8,9,10,11,12
+A,SampleA + c1,SampleB + c1,SampleC + c1,SampleD + c1,SampleE + c1,SampleF + c1,SampleG + c1,SampleH + c1,SampleI + c1,SampleJ + c1,Control,Control
+B,SampleA + c1,SampleB + c1,SampleC + c1,SampleD + c1,SampleE + c1,SampleF + c1,SampleG + c1,SampleH + c1,SampleI + c1,SampleJ + c1,Control,Control
+C,SampleA + c2,SampleB + c2,SampleC + c2,SampleD + c2,SampleE + c2,SampleF + c2,SampleG + c2,SampleH + c2,SampleI + c2,SampleJ + c2,Control,Control
+D,SampleA + c2,SampleB + c2,SampleC + c2,SampleD + c2,SampleE + c2,SampleF + c2,SampleG + c2,SampleH + c2,SampleI + c2,SampleJ + c2,Control,Control
+E,SampleA + c3,SampleB + c3,SampleC + c3,SampleD + c3,SampleE + c3,SampleF + c3,SampleG + c3,SampleH + c3,SampleI + c3,SampleJ + c3,Control,Control
+F,SampleA + c3,SampleB + c3,SampleC + c3,SampleD + c3,SampleE + c3,SampleF + c3,SampleG + c3,SampleH + c3,SampleI + c3,SampleJ + c3,Control,Control
+G,ExtraCtrl1,ExtraCtrl2,ExtraCtrl3,ExtraCtrl4,ExtraCtrl1,ExtraCtrl2,ExtraCtrl3,ExtraCtrl4,ExtraCtrl1,ExtraCtrl2,ExtraCtrl3,ExtraCtrl4
+H,,,,,,,,,,,,
