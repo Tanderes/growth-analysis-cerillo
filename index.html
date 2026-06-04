@@ -1003,18 +1003,32 @@ function renderLinePlot() {
     legend: {bgcolor:'rgba(0,0,0,0)', borderwidth:0, font:{size:11}},
     height: 580, autosize: true,
     font: {family: 'DM Mono, monospace', size:11, color:'#6b6860'},
-  }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d'], doubleClick:false});
+  }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d'], doubleClick:'reset'});
 
   setTimeout(() => Plotly.Plots.resize(plotEl), 350);
 
-  plotEl.on('plotly_legenddoubleclick', evt => {
-    const clickedIdx = evt.curveNumber; const currentData = plotEl.data;
-    const allHidden = currentData.every((t, i) => i === clickedIdx ? true : t.visible === 'legendonly');
-    const allVisible = currentData.every(t => t.visible !== 'legendonly');
+  // Single-click legend: isolate that trace (hide all others). Click again to restore all.
+  plotEl.on('plotly_legendclick', evt => {
+    const clickedIdx = evt.curveNumber;
+    const currentData = plotEl.data;
+    const isIsolated = currentData.every((t, i) => i === clickedIdx ? t.visible !== 'legendonly' : t.visible === 'legendonly');
     const update = { visible: [] };
-    if (allHidden || allVisible) { currentData.forEach((_, i) => { update.visible.push(i === clickedIdx ? true : 'legendonly'); }); }
-    else { currentData.forEach(() => { update.visible.push(true); }); }
-    Plotly.restyle(plotEl, update); return false;
+    if (isIsolated) {
+      // Already isolated — restore all
+      currentData.forEach(() => update.visible.push(true));
+    } else {
+      // Isolate clicked trace
+      currentData.forEach((_, i) => update.visible.push(i === clickedIdx ? true : 'legendonly'));
+    }
+    Plotly.restyle(plotEl, update);
+    return false; // prevent Plotly's default toggle
+  });
+
+  // Double-click legend: restore all traces
+  plotEl.on('plotly_legenddoubleclick', () => {
+    const update = { visible: state.processedDf ? getUniqueSamples(state.processedDf).map(() => true) : [] };
+    Plotly.restyle(plotEl, update);
+    return false;
   });
 }
 
@@ -1046,6 +1060,15 @@ function meanStd(arr) {
   return {mean:m, std:s};
 }
 
+function barPlotHeight(n) {
+  return Math.max(320, Math.min(700, 220 + n * 16));
+}
+
+function barBottomMargin(samples) {
+  const maxLen = Math.max(...samples.map(s => s.length));
+  return Math.max(90, Math.min(200, 40 + maxLen * 5));
+}
+
 function renderGrowthPlot() {
   const growthData = calcMaxGrowthRate(state.processedDf);
   const samples = Object.keys(growthData).sort(naturalSort);
@@ -1057,10 +1080,12 @@ function renderGrowthPlot() {
     text:means.map(v=>v.toFixed(4)), textposition:'auto', textfont:{size:9},
     marker:{color:colors}, hovertemplate:'<b>%{x}</b><br>%{y:.4f} OD/hr<extra></extra>',
   }], {
-    margin:{l:60,r:30,t:20,b:100}, xaxis:{tickangle:-40,tickfont:{size:11}},
-    yaxis:{title:{text:'OD/hr',font:{size:12}},gridcolor:'#f0efe9'},
+    margin:{l:60,r:30,t:20,b:barBottomMargin(samples)},
+    xaxis:{tickangle:-40, tickfont:{size:11}, automargin:true},
+    yaxis:{title:{text:'OD/hr',font:{size:12}}, gridcolor:'#f0efe9'},
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+    height:barPlotHeight(samples.length),
+    font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
   }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
 }
 
@@ -1075,10 +1100,12 @@ function renderAUCPlot() {
     text:means.map(v=>v.toFixed(3)), textposition:'auto', textfont:{size:9},
     marker:{color:colors}, hovertemplate:'<b>%{x}</b><br>%{y:.3f} OD·h<extra></extra>',
   }], {
-    margin:{l:65,r:30,t:20,b:100}, xaxis:{tickangle:-40,tickfont:{size:11}},
-    yaxis:{title:{text:'OD·h',font:{size:12}},gridcolor:'#f0efe9'},
+    margin:{l:65,r:30,t:20,b:barBottomMargin(samples)},
+    xaxis:{tickangle:-40, tickfont:{size:11}, automargin:true},
+    yaxis:{title:{text:'OD·h',font:{size:12}}, gridcolor:'#f0efe9'},
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+    height:barPlotHeight(samples.length),
+    font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
   }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
 }
 
