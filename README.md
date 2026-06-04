@@ -6,7 +6,7 @@ A standalone, browser-based growth curve analysis tool for 96-well and 384-well 
 
 ## Live App
 
-🔗 **[Open the app](https://YOUR-USERNAME.github.io/growth-analysis-cerillo/)** *(update after enabling GitHub Pages)*
+🔗 **[Open the app](https://tanderes.github.io/growth-analysis-cerillo/)** *(update after enabling GitHub Pages)*
 
 ---
 
