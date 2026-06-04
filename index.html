@@ -436,17 +436,6 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
         <span class="sample-link" onclick="downloadTemplate('layout')" title="Download sample layout map CSV">
           ↓ Layout map template
         </span>
-        <a class="sample-link" href="https://tanderes.github.io/growth-analysis-cerillo/" target="_blank" style="color:var(--accent2);border-color:#e5c97a;background:var(--accent2-light);">
-          ↗ Live app
-        </a>
-        <span class="welly-note">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
-          Compatible with Welly plate reader exports
-        </span>
-        <a class="header-link github-link" href="https://github.com/Tanderes/growth-analysis-cerillo/tree/main" target="_blank" style="font-size:11px;padding:3px 9px;">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-          GitHub
-        </a>
       </div>
     </div>
   </div>
@@ -1007,26 +996,35 @@ function renderLinePlot() {
 
   setTimeout(() => Plotly.Plots.resize(plotEl), 350);
 
-  // Single-click legend: isolate that trace (hide all others). Click again to restore all.
+  // Legend interaction:
+  // • Double-click a trace → isolate it (hide all others). Acts as "start a comparison".
+  // • Single-click a trace → toggle that trace on/off (add/remove from the current selection).
+  // • Double-click again on the isolated trace → restore all (reset).
   plotEl.on('plotly_legendclick', evt => {
     const clickedIdx = evt.curveNumber;
     const currentData = plotEl.data;
-    const isIsolated = currentData.every((t, i) => i === clickedIdx ? t.visible !== 'legendonly' : t.visible === 'legendonly');
-    const update = { visible: [] };
-    if (isIsolated) {
-      // Already isolated — restore all
-      currentData.forEach(() => update.visible.push(true));
-    } else {
-      // Isolate clicked trace
-      currentData.forEach((_, i) => update.visible.push(i === clickedIdx ? true : 'legendonly'));
-    }
-    Plotly.restyle(plotEl, update);
-    return false; // prevent Plotly's default toggle
+    // Toggle the clicked trace's visibility while leaving all others unchanged
+    const currentVisible = currentData[clickedIdx].visible;
+    const nextVisible = (currentVisible === 'legendonly') ? true : 'legendonly';
+    Plotly.restyle(plotEl, { visible: nextVisible }, [clickedIdx]);
+    return false; // prevent Plotly default
   });
 
-  // Double-click legend: restore all traces
-  plotEl.on('plotly_legenddoubleclick', () => {
-    const update = { visible: state.processedDf ? getUniqueSamples(state.processedDf).map(() => true) : [] };
+  plotEl.on('plotly_legenddoubleclick', evt => {
+    const clickedIdx = evt.curveNumber;
+    const currentData = plotEl.data;
+    // Check if this trace is already the sole visible one
+    const isIsolated = currentData.every((t, i) =>
+      i === clickedIdx ? t.visible !== 'legendonly' : t.visible === 'legendonly'
+    );
+    const update = { visible: [] };
+    if (isIsolated) {
+      // Restore all
+      currentData.forEach(() => update.visible.push(true));
+    } else {
+      // Isolate: show only the double-clicked trace
+      currentData.forEach((_, i) => update.visible.push(i === clickedIdx ? true : 'legendonly'));
+    }
     Plotly.restyle(plotEl, update);
     return false;
   });
@@ -1060,13 +1058,33 @@ function meanStd(arr) {
   return {mean:m, std:s};
 }
 
-function barPlotHeight(n) {
-  return Math.max(320, Math.min(700, 220 + n * 16));
+function barPlotWidth(n) {
+  // Each bar gets 42px min; total includes left/right margins (95px)
+  return Math.max(500, 95 + n * 42);
 }
 
 function barBottomMargin(samples) {
   const maxLen = Math.max(...samples.map(s => s.length));
-  return Math.max(90, Math.min(200, 40 + maxLen * 5));
+  return Math.max(100, Math.min(220, 50 + maxLen * 5));
+}
+
+function renderBarChart(divId, traces, yTitle) {
+  const samples = traces[0].x;
+  const plotWidth = barPlotWidth(samples.length);
+  const bottomMargin = barBottomMargin(samples);
+  const container = document.getElementById(divId).parentElement;
+  container.style.overflowX = 'auto';
+
+  Plotly.newPlot(divId, traces, {
+    margin:{l:65,r:20,t:20,b:bottomMargin},
+    xaxis:{tickangle:-45, tickfont:{size:11}, automargin:false},
+    yaxis:{title:{text:yTitle,font:{size:12}}, gridcolor:'#f0efe9'},
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    bargap: 0.25,
+    width: plotWidth,
+    height: 420,
+    font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+  }, {responsive:false, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d','toImage']});
 }
 
 function renderGrowthPlot() {
@@ -1075,18 +1093,11 @@ function renderGrowthPlot() {
   const means = samples.map(s=>meanStd(growthData[s]).mean);
   const stds = samples.map(s=>meanStd(growthData[s]).std);
   const colors = samples.map(s=>state.sampleColors[s]||stringToColor(s));
-  Plotly.newPlot('growthPlot', [{
+  renderBarChart('growthPlot', [{
     type:'bar', x:samples, y:means, error_y:{type:'data',array:stds,visible:true},
     text:means.map(v=>v.toFixed(4)), textposition:'auto', textfont:{size:9},
     marker:{color:colors}, hovertemplate:'<b>%{x}</b><br>%{y:.4f} OD/hr<extra></extra>',
-  }], {
-    margin:{l:60,r:30,t:20,b:barBottomMargin(samples)},
-    xaxis:{tickangle:-40, tickfont:{size:11}, automargin:true},
-    yaxis:{title:{text:'OD/hr',font:{size:12}}, gridcolor:'#f0efe9'},
-    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-    height:barPlotHeight(samples.length),
-    font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
-  }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
+  }], 'OD/hr');
 }
 
 function renderAUCPlot() {
@@ -1095,18 +1106,11 @@ function renderAUCPlot() {
   const means = samples.map(s=>meanStd(aucData[s]).mean);
   const stds = samples.map(s=>meanStd(aucData[s]).std);
   const colors = samples.map(s=>state.sampleColors[s]||stringToColor(s));
-  Plotly.newPlot('aucPlot', [{
+  renderBarChart('aucPlot', [{
     type:'bar', x:samples, y:means, error_y:{type:'data',array:stds,visible:true},
     text:means.map(v=>v.toFixed(3)), textposition:'auto', textfont:{size:9},
     marker:{color:colors}, hovertemplate:'<b>%{x}</b><br>%{y:.3f} OD·h<extra></extra>',
-  }], {
-    margin:{l:65,r:30,t:20,b:barBottomMargin(samples)},
-    xaxis:{tickangle:-40, tickfont:{size:11}, automargin:true},
-    yaxis:{title:{text:'OD·h',font:{size:12}}, gridcolor:'#f0efe9'},
-    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-    height:barPlotHeight(samples.length),
-    font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
-  }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
+  }], 'OD·h');
 }
 
 function renderStatCards() {
