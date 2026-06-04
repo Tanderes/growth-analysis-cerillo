@@ -3,369 +3,449 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Growth Analysis</title>
+<title>Growth Analysis Cerillo</title>
 <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.0/plotly.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap" rel="stylesheet">
+
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+:root {
+  --bg: #f7f6f2;
+  --surface: #ffffff;
+  --surface2: #f0efe9;
+  --border: #e2e0d8;
+  --border2: #ccc9be;
+  --text: #1a1916;
+  --text2: #6b6860;
+  --text3: #9e9b93;
+  --accent: #2d5a3d;
+  --accent-light: #e8f2eb;
+  --accent2: #8b6914;
+  --accent2-light: #fdf3dc;
+  --danger: #8b2020;
+  --danger-light: #fde8e8;
+  --mono: 'DM Mono', monospace;
+  --sans: 'DM Sans', sans-serif;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+}
 
-  :root {
-    --bg: #f7f6f2;
-    --surface: #ffffff;
-    --surface2: #f0efe9;
-    --border: #e2e0d8;
-    --border2: #ccc9be;
-    --text: #1a1916;
-    --text2: #6b6860;
-    --text3: #9e9b93;
-    --accent: #2d5a3d;
-    --accent-light: #e8f2eb;
-    --accent2: #8b6914;
-    --accent2-light: #fdf3dc;
-    --danger: #8b2020;
-    --danger-light: #fde8e8;
-    --mono: 'DM Mono', monospace;
-    --sans: 'DM Sans', sans-serif;
-    --radius: 8px;
-    --radius-lg: 14px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  }
+* { box-sizing: border-box; margin: 0; padding: 0; }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 15px;
+  line-height: 1.6;
+}
 
-  body {
-    font-family: var(--sans);
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 15px;
-    line-height: 1.6;
-  }
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 56px;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--shadow);
+}
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.logo-mark {
+  width: 28px; height: 28px;
+  background: var(--accent);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 600; color: #fff;
+  letter-spacing: 0; flex-shrink: 0;
+}
+.header-links {
+  display: flex; align-items: center; gap: 4px;
+}
+.header-link {
+  display: flex; align-items: center; gap: 5px;
+  font-family: var(--mono); font-size: 11px; color: var(--text3);
+  text-decoration: none; padding: 5px 10px;
+  border-radius: var(--radius);
+  transition: color 0.12s, background 0.12s;
+  letter-spacing: 0.03em;
+}
+.header-link:hover { color: var(--text); background: var(--surface2); }
+.step-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text3);
+  font-family: var(--mono);
+}
+.step-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--border2); transition: background 0.3s;
+}
+.step-dot.active { background: var(--accent); }
+.step-dot.done { background: var(--accent); opacity: 0.45; }
 
-  /* ── Header ── */
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 2rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 56px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-  }
-  .logo {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 500;
-    letter-spacing: 0.08em;
-    color: var(--accent);
-    text-transform: uppercase;
-  }
-  .step-indicator {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    font-size: 12px;
-    color: var(--text3);
-    font-family: var(--mono);
-  }
-  .step-dot {
-    width: 7px; height: 7px;
-    border-radius: 50%;
-    background: var(--border2);
-    transition: background 0.3s;
-  }
-  .step-dot.active { background: var(--accent); }
-  .step-dot.done { background: var(--accent); opacity: 0.45; }
+/* ── About panel ── */
+.about-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+.about-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  padding: 13px 18px; background: none; border: none; cursor: pointer;
+  color: var(--text2); font-family: var(--mono); font-size: 11px;
+  letter-spacing: 0.05em; text-align: left; gap: 10px;
+  transition: background 0.12s;
+}
+.about-toggle:hover { background: var(--surface2); }
+.about-toggle-left { display: flex; align-items: center; gap: 8px; }
+.about-chevron { transition: transform 0.2s; color: var(--text3); flex-shrink: 0; }
+.about-panel.open .about-chevron { transform: rotate(180deg); }
+.about-body {
+  display: none; padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+}
+.about-panel.open .about-body { display: block; }
+.about-intro {
+  font-size: 13px; color: var(--text2); line-height: 1.7;
+  padding: 14px 0 16px; max-width: 740px;
+}
+.about-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 16px;
+}
+@media (max-width: 640px) { .about-grid { grid-template-columns: 1fr; } }
+.about-card {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 14px;
+}
+.about-card-title {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--accent); margin-bottom: 8px;
+}
+.about-card ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.about-card ul li {
+  font-family: var(--mono); font-size: 11px; color: var(--text2);
+  display: flex; gap: 6px; align-items: flex-start; line-height: 1.5;
+}
+.about-card ul li::before { content: '→'; color: var(--accent); flex-shrink: 0; }
+.about-card p { font-size: 11px; color: var(--text2); line-height: 1.6; }
+.about-card strong { color: var(--text); }
+.steps { display: flex; flex-direction: column; gap: 7px; }
+.about-step { display: flex; gap: 10px; align-items: flex-start; }
+.about-step-num {
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--accent-light); border: 1px solid #a8d4b5;
+  color: var(--accent); font-family: var(--mono); font-size: 9px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px;
+}
+.about-step-text { font-family: var(--mono); font-size: 11px; color: var(--text2); line-height: 1.5; }
+.about-step-text strong { color: var(--text); }
+.sample-bar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 12px 0 2px; border-top: 1px solid var(--border); margin-top: 14px;
+}
+.sample-bar-label {
+  font-family: var(--mono); font-size: 10px; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--text3); white-space: nowrap;
+}
+.sample-link {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-family: var(--mono); font-size: 11px; color: var(--accent);
+  text-decoration: none; padding: 3px 9px; border-radius: 4px;
+  border: 1px solid #a8d4b5; background: var(--accent-light);
+  transition: background 0.12s, border-color 0.12s; cursor: pointer;
+}
+.sample-link:hover { background: #d5eadb; border-color: #7dbe92; }
+.github-link { color: var(--text2); border-color: var(--border2); background: var(--surface2); }
+.github-link:hover { background: var(--border); border-color: var(--border2); }
+.welly-note {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--mono); font-size: 11px; color: var(--accent2);
+  background: var(--accent2-light); border: 1px solid #e5c97a;
+  border-radius: 4px; padding: 3px 10px;
+}
 
-  /* ── Layout ── */
-  main { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; transition: max-width 0.3s ease; }
-  body.results-active main { max-width: 1400px; padding-left: 2rem; padding-right: 2rem; }
+/* ── Layout ── */
+main { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; transition: max-width 0.3s ease; }
+body.results-active main { max-width: 1400px; padding-left: 2rem; padding-right: 2rem; }
 
-  /* ── Steps ── */
-  .step { display: none; }
-  .step.active { display: block; animation: fadeUp 0.28s ease both; }
-  @keyframes fadeUp {
-    from { opacity: 0; transform: translateY(10px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
+/* ── Steps ── */
+.step { display: none; }
+.step.active { display: block; animation: fadeUp 0.28s ease both; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 
-  /* ── Typography ── */
-  h1 { font-size: 28px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 6px; }
-  h2 { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
-  h3 { font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); margin-bottom: 12px; }
-  p { color: var(--text2); }
-  .page-header { margin-bottom: 2rem; }
-  .page-header p { margin-top: 4px; }
+/* ── Typography ── */
+h1 { font-size: 28px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 6px; }
+h2 { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+h3 { font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); margin-bottom: 12px; }
+p { color: var(--text2); }
+.page-header { margin-bottom: 2rem; }
+.page-header p { margin-top: 4px; }
 
-  /* ── Cards ── */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.5rem;
-    box-shadow: var(--shadow);
-    margin-bottom: 1.25rem;
-  }
-  .card-sm { padding: 1rem 1.25rem; }
+/* ── Cards ── */
+.card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 1.5rem;
+  box-shadow: var(--shadow); margin-bottom: 1.25rem;
+}
+.card-sm { padding: 1rem 1.25rem; }
 
-  /* ── Form elements ── */
-  label { font-size: 13px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 5px; }
-  input[type=text], select, input[type=file] {
-    width: 100%;
-    padding: 9px 12px;
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    font-family: var(--sans);
-    font-size: 14px;
-    background: var(--surface);
-    color: var(--text);
-    transition: border-color 0.15s;
-    outline: none;
-  }
-  input[type=text]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,90,61,0.1); }
-  input[type=file] { padding: 7px 12px; cursor: pointer; font-family: var(--mono); font-size: 12px; }
-  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
-  .form-group { margin-bottom: 1rem; }
+/* ── Form elements ── */
+label { font-size: 13px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 5px; }
+input[type=text], select, input[type=file] {
+  width: 100%; padding: 9px 12px;
+  border: 1px solid var(--border2); border-radius: var(--radius);
+  font-family: var(--sans); font-size: 14px;
+  background: var(--surface); color: var(--text);
+  transition: border-color 0.15s; outline: none;
+}
+input[type=text]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,90,61,0.1); }
+input[type=file] { padding: 7px 12px; cursor: pointer; font-family: var(--mono); font-size: 12px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+.form-group { margin-bottom: 1rem; }
 
-  /* ── Radio plate type ── */
-  .plate-options { display: flex; gap: 10px; }
-  .plate-option {
-    flex: 1;
-    border: 1.5px solid var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 1rem 1.25rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: center;
-  }
-  .plate-option:hover { border-color: var(--accent); background: var(--accent-light); }
-  .plate-option.selected { border-color: var(--accent); background: var(--accent-light); }
-  .plate-option input { display: none; }
-  .plate-option .plate-num { font-size: 24px; font-family: var(--mono); font-weight: 500; color: var(--accent); }
-  .plate-option .plate-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+/* ── Plate type radio ── */
+.plate-options { display: flex; gap: 10px; }
+.plate-option {
+  flex: 1; border: 1.5px solid var(--border2); border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem; cursor: pointer; transition: all 0.15s; text-align: center;
+}
+.plate-option:hover { border-color: var(--accent); background: var(--accent-light); }
+.plate-option.selected { border-color: var(--accent); background: var(--accent-light); }
+.plate-option input { display: none; }
+.plate-option .plate-num { font-size: 24px; font-family: var(--mono); font-weight: 500; color: var(--accent); }
+.plate-option .plate-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
 
-  /* ── Buttons ── */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 7px;
-    padding: 9px 20px;
-    border-radius: var(--radius);
-    font-family: var(--sans);
-    font-size: 14px;
-    font-weight: 500;
-    cursor: pointer;
-    border: none;
-    transition: all 0.15s;
-    text-decoration: none;
-  }
-  .btn-primary { background: var(--accent); color: white; }
-  .btn-primary:hover { background: #245030; }
-  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
-  .btn-secondary:hover { background: var(--border); }
-  .btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #f0c0c0; }
-  .btn-danger:hover { background: #fad4d4; }
-  .btn-sm { padding: 6px 14px; font-size: 13px; }
-  .btn-group { display: flex; gap: 10px; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; }
+/* ── Buttons ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 20px; border-radius: var(--radius);
+  font-family: var(--sans); font-size: 14px; font-weight: 500;
+  cursor: pointer; border: none; transition: all 0.15s; text-decoration: none;
+}
+.btn-primary { background: var(--accent); color: white; }
+.btn-primary:hover { background: #245030; }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+.btn-secondary:hover { background: var(--border); }
+.btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #f0c0c0; }
+.btn-danger:hover { background: #fad4d4; }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-group { display: flex; gap: 10px; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; }
 
-  /* ── Badges ── */
-  .badge {
-    display: inline-block;
-    padding: 2px 9px;
-    border-radius: 99px;
-    font-size: 11px;
-    font-weight: 500;
-    font-family: var(--mono);
-  }
-  .badge-green { background: var(--accent-light); color: var(--accent); }
-  .badge-amber { background: var(--accent2-light); color: var(--accent2); }
-  .badge-red { background: var(--danger-light); color: var(--danger); }
+/* ── Badges ── */
+.badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; font-family: var(--mono); }
+.badge-green { background: var(--accent-light); color: var(--accent); }
+.badge-amber { background: var(--accent2-light); color: var(--accent2); }
+.badge-red { background: var(--danger-light); color: var(--danger); }
 
-  /* ── Alert ── */
-  .alert {
-    padding: 10px 14px;
-    border-radius: var(--radius);
-    font-size: 13px;
-    margin-bottom: 1rem;
-    border-left: 3px solid;
-  }
-  .alert-error { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
-  .alert-success { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
-  .alert-info { background: var(--accent2-light); color: var(--accent2); border-color: var(--accent2); }
+/* ── Alert ── */
+.alert { padding: 10px 14px; border-radius: var(--radius); font-size: 13px; margin-bottom: 1rem; border-left: 3px solid; }
+.alert-error { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+.alert-success { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+.alert-info { background: var(--accent2-light); color: var(--accent2); border-color: var(--accent2); }
 
-  /* ── Table preview ── */
-  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 1rem; }
-  table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
-  th { background: var(--surface2); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 500; color: var(--text2); white-space: nowrap; }
-  td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--text); }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: var(--surface2); }
+/* ── Table preview ── */
+.table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 1rem; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+th { background: var(--surface2); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 500; color: var(--text2); white-space: nowrap; }
+td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--text); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
 
-  /* ── Well plate grid ── */
-  .well-grid-wrap { overflow-x: auto; }
-  .well-grid { display: inline-grid; gap: 4px; margin-top: 8px; }
-  .well-grid.grid-96 { grid-template-columns: 32px repeat(12, 46px); }
-  .well-grid.grid-384 { grid-template-columns: 28px repeat(24, 32px); }
-  .well-header-cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--text3);
-    font-weight: 500;
-  }
-  .well-row-label {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    padding-right: 6px;
-    font-size: 11px;
-    font-family: var(--mono);
-    color: var(--text3);
-    font-weight: 500;
-  }
-  .well-input {
-    width: 100%;
-    padding: 3px 4px;
-    font-size: 9px;
-    font-family: var(--mono);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    text-align: center;
-    height: 28px;
-    background: var(--surface);
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .well-grid.grid-384 .well-input { font-size: 8px; height: 24px; padding: 2px 2px; }
-  .well-input:focus { border-color: var(--accent); background: var(--accent-light); outline: none; }
-  .well-input.filled { background: var(--accent-light); border-color: #a8d4b5; color: var(--accent); }
+/* ── Well plate grid ── */
+.well-grid-wrap { overflow-x: auto; }
+.well-grid { display: inline-grid; gap: 4px; margin-top: 8px; }
+.well-grid.grid-96 { grid-template-columns: 32px repeat(12, 46px); }
+.well-grid.grid-384 { grid-template-columns: 28px repeat(24, 32px); }
+.well-header-cell { display: flex; align-items: center; justify-content: center; font-size: 11px; font-family: var(--mono); color: var(--text3); font-weight: 500; }
+.well-row-label { display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-size: 11px; font-family: var(--mono); color: var(--text3); font-weight: 500; }
+.well-input {
+  width: 100%; padding: 3px 4px; font-size: 9px; font-family: var(--mono);
+  border: 1px solid var(--border); border-radius: 4px; text-align: center;
+  height: 28px; background: var(--surface); transition: border-color 0.15s, background 0.15s;
+}
+.well-grid.grid-384 .well-input { font-size: 8px; height: 24px; padding: 2px 2px; }
+.well-input:focus { border-color: var(--accent); background: var(--accent-light); outline: none; }
+.well-input.filled { background: var(--accent-light); border-color: #a8d4b5; color: var(--accent); }
 
-  /* ── Heatmap section ── */
-  .heatmap-note { font-size: 12px; color: var(--text3); font-family: var(--mono); margin-top: 6px; }
+/* ── Heatmap ── */
+.plot-container { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; overflow: hidden; }
+.plot-title { font-size: 13px; font-weight: 500; color: var(--text2); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
 
-  /* ── Results ── */
-  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
-  @media (max-width: 640px) { .results-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
+/* ── Results ── */
+.results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+@media (max-width: 640px) { .results-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
 
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 1.25rem 1.5rem;
-    box-shadow: var(--shadow);
-  }
-  .stat-label { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 4px; }
-  .stat-value { font-size: 26px; font-weight: 500; font-family: var(--mono); color: var(--text); }
+.stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1.25rem 1.5rem; box-shadow: var(--shadow); }
+.stat-label { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 4px; }
+.stat-value { font-size: 26px; font-weight: 500; font-family: var(--mono); color: var(--text); }
 
-  /* ── Color pickers ── */
-  .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
-  .color-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    background: var(--surface);
-  }
-  .color-item input[type=color] {
-    width: 28px;
-    height: 28px;
-    padding: 1px;
-    border: 1px solid var(--border2);
-    border-radius: 5px;
-    cursor: pointer;
-    background: none;
-  }
-  .color-item-name { font-size: 12px; font-family: var(--mono); color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* ── Color pickers ── */
+.color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+.color-item { display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); }
+.color-item input[type=color] { width: 28px; height: 28px; padding: 1px; border: 1px solid var(--border2); border-radius: 5px; cursor: pointer; background: none; }
+.color-item-name { font-size: 12px; font-family: var(--mono); color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-  /* ── Plot containers ── */
-  .plot-container { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; overflow: hidden; }
-  .plot-title { font-size: 13px; font-weight: 500; color: var(--text2); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+/* ── Tabs ── */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
+.tab { padding: 9px 18px; font-size: 13px; font-weight: 500; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--text3); transition: all 0.15s; }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
 
-  /* ── Plate map preview table ── */
-  .platemap-preview th, .platemap-preview td { padding: 4px 8px; font-size: 11px; }
+/* ── Upload zone ── */
+.upload-zone {
+  border: 1.5px dashed var(--border2); border-radius: var(--radius-lg);
+  padding: 2rem; text-align: center; cursor: pointer;
+  transition: all 0.15s; background: var(--surface);
+}
+.upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
+.upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; }
+.upload-zone p { color: var(--text2); font-size: 14px; }
+.upload-zone small { color: var(--text3); font-size: 12px; font-family: var(--mono); }
 
-  /* ── Divider ── */
-  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+/* ── Spinner ── */
+.spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 
-  /* ── Upload zone ── */
-  .upload-zone {
-    border: 1.5px dashed var(--border2);
-    border-radius: var(--radius-lg);
-    padding: 2rem;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: var(--surface);
-  }
-  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
-  .upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; }
-  .upload-zone p { color: var(--text2); font-size: 14px; }
-  .upload-zone small { color: var(--text3); font-size: 12px; font-family: var(--mono); }
-
-  /* ── Tabs ── */
-  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
-  .tab {
-    padding: 9px 18px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    color: var(--text3);
-    transition: all 0.15s;
-  }
-  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* ── Spinner ── */
-  .spinner {
-    display: inline-block;
-    width: 16px; height: 16px;
-    border: 2px solid var(--border2);
-    border-top-color: var(--accent);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* ── Scrollable well section on 384 ── */
-  .scroll-notice { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 8px; }
-
-  /* Plotly override */
-  .js-plotly-plot .plotly { border-radius: var(--radius); }
+.scroll-notice { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 8px; }
+hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+.platemap-preview th, .platemap-preview td { padding: 4px 8px; font-size: 11px; }
+.js-plotly-plot .plotly { border-radius: var(--radius); }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">Growth Analysis</div>
-  <div class="step-indicator">
-    <span id="si1" class="step-dot active"></span>
-    <span id="si2" class="step-dot"></span>
-    <span id="si3" class="step-dot"></span>
-    <span id="si4" class="step-dot"></span>
-    <span style="color:var(--text3);font-size:11px;margin-left:4px" id="step-label">Upload</span>
+  <div class="logo">
+    <div class="logo-mark">G</div>
+    Growth Analysis Cerillo
+  </div>
+  <div style="display:flex;align-items:center;gap:16px;">
+    <div class="step-indicator">
+      <span id="si1" class="step-dot active"></span>
+      <span id="si2" class="step-dot"></span>
+      <span id="si3" class="step-dot"></span>
+      <span id="si4" class="step-dot"></span>
+      <span style="color:var(--text3);font-size:11px;margin-left:4px" id="step-label">Upload</span>
+    </div>
+    <div class="header-links">
+      <a class="header-link" href="https://welly.cerillo.com" target="_blank">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/><path d="M9 12h6M12 9v6"/></svg>
+        Welly
+      </a>
+      <a class="header-link github-link" href="https://github.com/cerillo-lab/growth-analysis" target="_blank">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub
+      </a>
+    </div>
   </div>
 </header>
 
 <main>
 
-<!-- ══════════════════════════════════════════════
-     STEP 1: Upload
-══════════════════════════════════════════════ -->
+<!-- STEP 1: Upload -->
 <div class="step active" id="step1">
   <div class="page-header">
     <h1>Upload your data</h1>
-    <p>Upload a plate reader CSV or Excel file to get started.</p>
+    <p>Upload a plate reader CSV or Excel file exported from Welly or your plate reader software.</p>
+  </div>
+
+  <!-- About panel -->
+  <div class="about-panel" id="aboutPanel">
+    <button class="about-toggle" onclick="toggleAbout()">
+      <div class="about-toggle-left">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#2d5a3d" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span style="color:var(--text);font-weight:500;">About this app</span>
+        <span style="color:var(--text3);font-weight:400;font-size:10px;text-transform:none;letter-spacing:0;">— how to use, file format &amp; template downloads</span>
+      </div>
+      <svg class="about-chevron" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+    <div class="about-body">
+      <p class="about-intro">Browser-based microbial growth curve analysis for 96- and 384-well plates. Upload your absorbance time series, assign sample names via plate map, and get interactive growth curves, max growth rates, and AUC values — all computed locally. <strong>No data leaves your machine.</strong> Built for the <a href="https://welly.cerillo.com" style="color:var(--accent)">Welly</a> platform at Cerillo.</p>
+      <div class="about-grid">
+        <div class="about-card">
+          <div class="about-card-title">Absorbance file format</div>
+          <ul>
+            <li>CSV or Excel (.xlsx) from your plate reader</li>
+            <li>First column: <strong>Duration (Hours)</strong> or <strong>Time</strong></li>
+            <li>Remaining columns: one per well (e.g. <strong>A1, A2 … H12</strong>)</li>
+            <li>96-well: 97 columns total · 384-well: 385 columns total</li>
+            <li>Welly exports are supported natively</li>
+          </ul>
+        </div>
+        <div class="about-card">
+          <div class="about-card-title">Plate layout map format</div>
+          <ul>
+            <li>CSV with row letters in column 1 (A–H or A–P)</li>
+            <li>Column numbers in the header row (1–12 or 1–24)</li>
+            <li>Cell values = sample names (e.g. <strong>WT</strong>, <strong>Mutant1,c1</strong>)</li>
+            <li>Leave cells blank to exclude wells from analysis</li>
+            <li>Replicate wells with the same name are grouped automatically</li>
+          </ul>
+        </div>
+        <div class="about-card">
+          <div class="about-card-title">How it works</div>
+          <div class="steps">
+            <div class="about-step"><div class="about-step-num">1</div><div class="about-step-text"><strong>Upload</strong> your absorbance time series CSV</div></div>
+            <div class="about-step"><div class="about-step-num">2</div><div class="about-step-text"><strong>Map wells</strong> — upload a plate layout CSV or fill in the grid manually</div></div>
+            <div class="about-step"><div class="about-step-num">3</div><div class="about-step-text"><strong>Review</strong> the max OD heatmap to catch outlier wells</div></div>
+            <div class="about-step"><div class="about-step-num">4</div><div class="about-step-text"><strong>Analyze</strong> — growth curves, max growth rate (OD/hr), and AUC (OD·h) with error bars across replicates</div></div>
+          </div>
+        </div>
+        <div class="about-card">
+          <div class="about-card-title">Metrics computed</div>
+          <ul>
+            <li><strong>Growth curve</strong> — mean OD ± SD over time per sample</li>
+            <li><strong>Max growth rate</strong> — peak ΔOD/Δt (OD/hr) per replicate, then averaged</li>
+            <li><strong>Area under curve</strong> — trapezoidal integration (OD·h) per replicate</li>
+            <li>Download: HTML report, summary CSV, or PNG charts</li>
+          </ul>
+        </div>
+      </div>
+      <div class="sample-bar">
+        <span class="sample-bar-label">Template files</span>
+        <span class="sample-link" onclick="downloadTemplate('abs')" title="Download sample absorbance CSV">
+          ↓ Absorbance template
+        </span>
+        <span class="sample-link" onclick="downloadTemplate('layout')" title="Download sample layout map CSV">
+          ↓ Layout map template
+        </span>
+        <span class="welly-note">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>
+          Compatible with Welly plate reader exports
+        </span>
+        <a class="header-link github-link" href="https://github.com/cerillo-lab/growth-analysis" target="_blank" style="font-size:11px;padding:3px 9px;">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+          GitHub
+        </a>
+      </div>
+    </div>
   </div>
 
   <div class="card">
@@ -388,8 +468,8 @@
     <h3>Data file</h3>
     <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFile').click()">
       <div class="upload-icon">📊</div>
-      <p>Click to upload or drag & drop</p>
-      <small>CSV, XLS, XLSX — must include a Time column + well columns</small>
+      <p>Click to upload or drag &amp; drop</p>
+      <small>CSV, XLS, XLSX — must include a Time or Duration (Hours) column + well columns (A1…H12)</small>
     </div>
     <input type="file" id="csvFile" accept=".csv,.xls,.xlsx" style="display:none">
     <div id="uploadStatus" style="margin-top:10px"></div>
@@ -411,9 +491,7 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     STEP 2: Name Wells (plate map)
-══════════════════════════════════════════════ -->
+<!-- STEP 2: Name Wells -->
 <div class="step" id="step2">
   <div class="page-header">
     <h1>Name your wells</h1>
@@ -428,7 +506,9 @@
 
     <div class="tab-panel active" id="tab-upload">
       <div class="alert alert-info" style="margin-bottom:1rem">
-        Plate map CSV: rows = plate rows (A–H or A–P), columns = plate columns (1–12 or 1–24). Cell values = sample names.
+        Plate map CSV: rows = plate rows (A–H or A–P), columns = plate columns (1–12 or 1–24). Cell values = sample names. Wells with the same name are treated as replicates.
+        <br><br>
+        <span style="cursor:pointer;text-decoration:underline;color:var(--accent2)" onclick="downloadTemplate('layout')">↓ Download layout template</span> to see the expected format.
       </div>
       <div class="form-group">
         <label>Plate map CSV file</label>
@@ -442,7 +522,7 @@
 
     <div class="tab-panel" id="tab-manual">
       <div class="alert alert-info" style="margin-bottom:1rem">
-        Leave cells blank to exclude a well. Wells with names will be included in analysis.
+        Leave cells blank to exclude a well. Wells with the same name are grouped as replicates.
       </div>
       <div class="scroll-notice" id="scrollNotice" style="display:none">← Scroll horizontally to see all columns →</div>
       <div class="well-grid-wrap">
@@ -450,7 +530,7 @@
       </div>
       <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-secondary btn-sm" onclick="clearAllWells()">Clear all</button>
-        <button class="btn btn-secondary btn-sm" onclick="fillSamplePattern()">Fill A1–H12 pattern</button>
+        <button class="btn btn-secondary btn-sm" onclick="fillSamplePattern()">Fill sample pattern</button>
       </div>
     </div>
   </div>
@@ -463,13 +543,11 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     STEP 3: Review heatmap + well heatmap
-══════════════════════════════════════════════ -->
+<!-- STEP 3: Heatmap -->
 <div class="step" id="step3">
   <div class="page-header">
     <h1>Data overview</h1>
-    <p>Heatmap of maximum OD values across the plate.</p>
+    <p>Heatmap of maximum OD values across the plate. Review for outlier wells before analysis.</p>
   </div>
 
   <div class="plot-container">
@@ -483,19 +561,15 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     STEP 4: Results
-══════════════════════════════════════════════ -->
+<!-- STEP 4: Results -->
 <div class="step" id="step4">
   <div class="page-header">
     <h1>Results</h1>
     <p>Growth curves, statistics, and download options.</p>
   </div>
 
-  <!-- Stats row -->
   <div class="results-grid" id="statCards"></div>
 
-  <!-- Color pickers -->
   <div class="card card-sm" style="margin-bottom:1.25rem">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
       <h3 style="margin-bottom:0">Sample colors</h3>
@@ -504,7 +578,6 @@
     <div class="color-grid" id="colorPickers"></div>
   </div>
 
-  <!-- Charts -->
   <div class="plot-container">
     <div class="plot-title">Optical density over time</div>
     <div id="linePlot"></div>
@@ -526,7 +599,6 @@
     <div id="aucPlot"></div>
   </div>
 
-  <!-- Export — above summary table -->
   <div class="card card-sm">
     <h3>Export</h3>
     <div class="btn-group" style="margin-top:8px">
@@ -535,7 +607,6 @@
     </div>
   </div>
 
-  <!-- Summary table -->
   <div class="card">
     <h3>Summary table</h3>
     <div class="table-wrap" id="summaryTable"></div>
@@ -549,21 +620,42 @@
 </main>
 
 <script>
-// ═══════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════
-const state = {
-  rawDf: null,        // array of row objects after parse
-  plateType: '96',
-  processedDf: null,  // renamed columns df
-  wellNameMap: {},
-  sampleColors: {},
-  currentStep: 1,
+// ── Template downloads (base64-embedded CSVs) ──────────────────────────────
+const TEMPLATES = {
+  abs: {
+    b64: 'RHVyYXRpb24gKEhvdXJzKSxBMSxBMixBMyxBNCxBNSxBNixBNyxBOCxBOSxBMTAsQTExLEExMixCMSxCMixCMyxCNCxCNSxCNixCNyxCOCxCOSxCMTAsQjExLEIxMixDMSxDMixDMyxDNCxDNSxDNixDNyxDOCxDOSxDMTAsQzExLEMxMixEMSxEMixEMyxENCxENSxENixENyxEOCxEOSxEMTAsRDExLEQxMixFMSxFMixFMyxFNCxFNSxFNixFNyxFOCxFOSxFMTAsRTExLEUxMixGMSxGMixGMyxGNCxGNSxGNixGNyxGOCxGOSxGMTAsRjExLEYxMixHMSxHMixHMyxHNCxHNSxHNixHNyxHOCxHOSxHMTAsRzExLEcxMixIMSxIMixIMyxINCxINSxINixINyxIOCxIOSxIMTAsSDExLEgxMgowLjAsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEsMC4wMDEKMi4wLDAuMDEyLDAuMDEzLDAuMDExLDAuMDE0LDAuMDEyLDAuMDEzLDAuMDExLDAuMDEyLDAuMDEzLDAuMDE0LDAuMDExLDAuMDEyLDAuMDEwLDAuMDExLDAuMDEyLDAuMDEzLDAuMDEwLDAuMDExLDAuMDEyLDAuMDEzLDAuMDEwLDAuMDExLDAuMDEyLDAuMDEzLDAuMDE1LDAuMDE0LDAuMDEzLDAuMDEyLDAuMDE1LDAuMDE0LDAuMDEzLDAuMDEyLDAuMDE1LDAuMDE0LDAuMDEzLDAuMDEyLDAuMDEzLDAuMDEyLDAuMDE0LDAuMDEzLDAuMDEyLDAuMDEzLDAuMDE0LDAuMDEyLDAuMDEzLDAuMDE0LDAuMDEyLDAuMDEzLDAuMDExLDAuMDEyLDAuMDEzLDAuMDExLDAuMDEyLDAuMDEzLDAuMDExLDAuMDEyLDAuMDEzLDAuMDExLDAuMDEyLDAuMDEzLDAuMDExLDAuMDEyLDAuMDEzLDAuMDE0LDAuMDEzLDAuMDEyLDAuMDE0LDAuMDEzLDAuMDEyLDAuMDE0LDAuMDEzLDAuMDEyLDAuMDEyLDAuMDExLDAuMDEzLDAuMDEyLDAuMDExLDAuMDEzLDAuMDEyLDAuMDExLDAuMDEzLDAuMDEyLDAuMDExLDAuMDEzLDAuMDEwLDAuMDExLDAuMDEyLDAuMDEwLDAuMDExLDAuMDEyLDAuMDEwLDAuMDExLDAuMDEyLDAuMDEwLDAuMDExLDAuMDEyCjQuMCwwLjA0NSwwLjA0NywwLjA0MywwLjA0OCwwLjA0NiwwLjA0NCwwLjA0MywwLjA0NSwwLjA0NywwLjA0OSwwLjA0MywwLjA0NSwwLjAzOCwwLjA0MCwwLjA0MiwwLjA0MSwwLjAzOSwwLjA0MCwwLjA0MiwwLjA0MSwwLjAzOSwwLjA0MCwwLjA0MiwwLjA0MSwwLjA1NSwwLjA1MywwLjA1MSwwLjA1MCwwLjA1NiwwLjA1NCwwLjA1MiwwLjA1MSwwLjA1NiwwLjA1NCwwLjA1MiwwLjA1MSwwLjA0OCwwLjA0NywwLjA0OSwwLjA0OCwwLjA0NywwLjA0OCwwLjA1MCwwLjA0OCwwLjA0NywwLjA0OSwwLjA0OCwwLjA0NywwLjA0MSwwLjA0MywwLjA0NSwwLjA0MiwwLjA0MCwwLjA0MywwLjA0NSwwLjA0MiwwLjA0MCwwLjA0MywwLjA0NSwwLjA0MiwwLjA0MCwwLjA0MywwLjA0NSwwLjA1MiwwLjA1MSwwLjA0OSwwLjA1MywwLjA1MSwwLjA0OSwwLjA1MywwLjA1MSwwLjA0OSwwLjA0NCwwLjA0MiwwLjA0NiwwLjA0NCwwLjA0MiwwLjA0NiwwLjA0NCwwLjA0MiwwLjA0NiwwLjA0NCwwLjA0MiwwLjA0NiwwLjAzOCwwLjAzOSwwLjA0MSwwLjAzOCwwLjAzOSwwLjA0MSwwLjAzOCwwLjAzOSwwLjA0MSwwLjAzOCwwLjAzOSwwLjA0MQo2LjAsMC4xMjAsMC4xMjUsMC4xMTgsMC4xMjgsMC4xMjIsMC4xMTksMC4xMTYsMC4xMjEsMC4xMjQsMC4xMzAsMC4xMTcsMC4xMjAsMC4wOTUsMC4wOTksMC4xMDMsMC4xMDEsMC4wOTcsMC4wOTksMC4xMDMsMC4xMDEsMC4wOTcsMC4wOTksMC4xMDMsMC4xMDEsMC4xNTUsMC4xNTEsMC4xNDcsMC4xNDUsMC4xNTgsMC4xNTMsMC4xNDksMC4xNDYsMC4xNTgsMC4xNTMsMC4xNDksMC4xNDYsMC4xMzIsMC4xMzAsMC4xMzQsMC4xMzIsMC4xMzAsMC4xMzMsMC4xMzYsMC4xMzMsMC4xMzAsMC4xMzQsMC4xMzMsMC4xMzAsMC4xMDgsMC4xMTIsMC4xMTYsMC4xMTAsMC4xMDYsMC4xMTEsMC4xMTUsMC4xMTAsMC4xMDYsMC4xMTEsMC4xMTUsMC4xMTAsMC4xMDYsMC4xMTEsMC4xMTUsMC4xNDIsMC4xMzksMC4xMzUsMC4xNDQsMC4xNDEsMC4xMzcsMC4xNDUsMC4xNDIsMC4xMzgsMC4xMTgsMC4xMTQsMC4xMjAsMC4xMTgsMC4xMTMsMC4xMjAsMC4xMTgsMC4xMTMsMC4xMjAsMC4xMTgsMC4xMTMsMC4xMjAsMC4wOTUsMC4wOTcsMC4xMDAsMC4wOTQsMC4wOTcsMC4xMDAsMC4wOTQsMC4wOTcsMC4xMDAsMC4wOTQsMC4wOTcsMC4xMDAKOC4wLDAuMjkwLDAuMzAyLDAuMjg1LDAuMzA4LDAuMjk1LDAuMjg4LDAuMjgxLDAuMjkyLDAuMjk5LDAuMzE1LDAuMjgzLDAuMjg5LDAuMjIwLDAuMjI4LDAuMjM2LDAuMjMyLDAuMjI0LDAuMjI4LDAuMjM2LDAuMjMxLDAuMjIzLDAuMjI4LDAuMjM1LDAuMjMxLDAuMzk1LDAuMzg4LDAuMzc5LDAuMzc0LDAuNDAxLDAuMzkzLDAuMzg0LDAuMzc2LDAuNDAyLDAuMzk0LDAuMzg1LDAuMzc3LDAuMzM1LDAuMzMwLDAuMzQwLDAuMzM1LDAuMzI5LDAuMzM1LDAuMzQ1LDAuMzM4LDAuMzMwLDAuMzQxLDAuMzM1LDAuMzI5LDAuMjU1LDAuMjYzLDAuMjcxLDAuMjU4LDAuMjUxLDAuMjYyLDAuMjcwLDAuMjU3LDAuMjUwLDAuMjYyLDAuMjY5LDAuMjU2LDAuMjQ5LDAuMjYxLDAuMjY5LDAuMzY1LDAuMzU4LDAuMzQ5LDAuMzcwLDAuMzYzLDAuMzU0LDAuMzcyLDAuMzY1LDAuMzU2LDAuMjg4LDAuMjc5LDAuMjkzLDAuMjg4LDAuMjc4LDAuMjkzLDAuMjg3LDAuMjc3LDAuMjkyLDAuMjg2LDAuMjc2LDAuMjkxLDAuMjIwLDAuMjI1LDAuMjMwLDAuMjE5LDAuMjI0LDAuMjI5LDAuMjE4LDAuMjI0LDAuMjI5LDAuMjE4LDAuMjI0LDAuMjI5CjEwLjAsMC41MjAsMC41NDAsMC41MTIsMC41NDgsMC41MjgsMC41MTUsMC41MDQsMC41MjIsMC41MzUsMC41NjAsMC41MDcsMC41MTgsMC4zODUsMC4zOTgsMC40MTEsMC40MDQsMC4zOTEsMC4zOTgsMC40MTEsMC40MDMsMC4zOTAsMC4zOTcsMC40MTAsMC40MDMsMC42ODUsMC42NzMsMC42NTgsMC42NTAsMC42OTUsMC42ODIsMC42NjcsMC42NTMsMC42OTYsMC42ODMsMC42NjgsMC42NTQsMC41OTAsMC41ODEsMC41OTUsMC41ODgsMC41NzksMC41ODksMC42MDMsMC41OTQsMC41ODIsMC41OTYsMC41ODksMC41ODAsMC40NDAsMC40NTIsMC40NjQsMC40NDUsMC40MzYsMC40NTAsMC40NjMsMC40NDQsMC40MzQsMC40NDksMC40NjIsMC40NDMsMC40MzMsMC40NDgsMC40NjEsMC42MzUsMC42MjQsMC42MTEsMC42NDIsMC42MzAsMC42MTcsMC42NDUsMC42MzMsMC42MjAsMC41MDIsMC40ODksMC41MDcsMC41MDEsMC40ODcsMC41MDYsMC41MDAsMC40ODYsMC41MDUsMC40OTgsMC40ODQsMC41MDMsMC4zNzgsMC4zODUsMC4zOTIsMC4zNzYsMC4zODQsMC4zOTEsMC4zNzUsMC4zODMsMC4zOTAsMC4zNzQsMC4zODMsMC4zOTAKMTIuMCwwLjY4MCwwLjcwNSwwLjY3MiwwLjcxNSwwLjY4OCwwLjY3NSwwLjY2MSwwLjY4MiwwLjY5OSwwLjczMCwwLjY2NSwwLjY3OCwwLjQ5MiwwLjUwOCwwLjUyNCwwLjUxNSwwLjQ5OSwwLjUwOCwwLjUyNCwwLjUxNCwwLjQ5OCwwLjUwNywwLjUyMywwLjUxNCwwLjg3MCwwLjg1NSwwLjgzNywwLjgyNiwwLjg4MiwwLjg2NiwwLjg0OCwwLjgzMCwwLjg4NCwwLjg2OCwwLjg1MCwwLjgzMiwwLjc1OCwwLjc0NywwLjc2MywwLjc1NCwwLjc0MywwLjc1NiwwLjc3MiwwLjc2MSwwLjc0NywwLjc2NSwwLjc1NiwwLjc0NCwwLjU1OCwwLjU3MywwLjU4OCwwLjU2NCwwLjU1MiwwLjU3MCwwLjU4NiwwLjU2MiwwLjU1MCwwLjU2OCwwLjU4NCwwLjU2MCwwLjU0OCwwLjU2NiwwLjU4MiwwLjgxMCwwLjc5NywwLjc4MSwwLjgxOCwwLjgwNCwwLjc4OCwwLjgyMSwwLjgwNywwLjc5MSwwLjY0MSwwLjYyNSwwLjY0NSwwLjYzOSwwLjYyMywwLjY0NCwwLjYzNywwLjYyMSwwLjY0MiwwLjYzNCwwLjYxOCwwLjYzOSwwLjQ3OCwwLjQ4NywwLjQ5NiwwLjQ3NiwwLjQ4NiwwLjQ5NSwwLjQ3NSwwLjQ4NSwwLjQ5NCwwLjQ3NCwwLjQ4NSwwLjQ5NAoxNC4wLDAuNzgyLDAuODEwLDAuNzczLDAuODIyLDAuNzkyLDAuNzc2LDAuNzYwLDAuNzg0LDAuODA0LDAuODQwLDAuNzY1LDAuNzgwLDAuNTYwLDAuNTc4LDAuNTk2LDAuNTg2LDAuNTY4LDAuNTc4LDAuNTk2LDAuNTg1LDAuNTY3LDAuNTc3LDAuNTk1LDAuNTg1LDAuOTg1LDAuOTY5LDAuOTQ5LDAuOTM2LDAuOTk5LDAuOTgxLDAuOTYxLDAuOTQxLDEuMDAxLDAuOTgzLDAuOTYzLDAuOTQzLDAuODY4LDAuODU1LDAuODczLDAuODYzLDAuODUxLDAuODY1LDAuODgzLDAuODcxLDAuODU1LDAuODc1LDAuODY0LDAuODUxLDAuNjMwLDAuNjQ3LDAuNjY0LDAuNjM3LDAuNjI0LDAuNjQ0LDAuNjYyLDAuNjM1LDAuNjIyLDAuNjQxLDAuNjU5LDAuNjMzLDAuNjIwLDAuNjM5LDAuNjU3LDAuOTIyLDAuOTA2LDAuODg4LDAuOTMxLDAuOTE0LDAuODk2LDAuOTM0LDAuOTE3LDAuODk5LDAuNzMwLDAuNzEyLDAuNzM1LDAuNzI4LDAuNzEwLDAuNzMzLDAuNzI2LDAuNzA4LDAuNzMxLDAuNzIyLDAuNzA0LDAuNzI3LDAuNTQwLDAuNTUxLDAuNTYyLDAuNTM4LDAuNTQ5LDAuNTYwLDAuNTM3LDAuNTQ4LDAuNTU5LDAuNTM2LDAuNTQ4LDAuNTU5CjE2LjAsMC44MzAsMC44NTgsMC44MjAsMC44NzEsMC44NDAsMC44MjMsMC44MDYsMC44MzEsMC44NTIsMC44OTEsMC44MTEsMC44MjcsMC41OTEsMC42MTAsMC42MjksMC42MTksMC41OTksMC42MTAsMC42MjksMC42MTcsMC41OTgsMC42MDgsMC42MjgsMC42MTcsMS4wMzUsMS4wMTgsMC45OTcsMC45ODMsMS4wNTAsMS4wMzEsMS4wMTAsMC45ODksMS4wNTIsMS4wMzMsMS4wMTIsMC45OTEsMC45MTYsMC45MDIsMC45MjEsMC45MTAsMC44OTcsMC45MTMsMC45MzIsMC45MTksMC45MDIsMC45MjMsMC45MTEsMC44OTgsMC42NjIsMC42ODAsMC42OTgsMC42NjksMC42NTUsMC42NzcsMC42OTUsMC42NjYsMC42NTIsMC42NzQsMC42OTIsMC42NjQsMC42NTAsMC42NzEsMC42ODksMC45NzAsMC45NTMsMC45MzQsMC45ODAsMC45NjIsMC45NDMsMC45ODMsMC45NjUsMC45NDYsMC43NjgsMC43NDksMC43NzMsMC43NjYsMC43NDcsMC43NzEsMC43NjMsMC43NDQsMC43NjgsMC43NTksMC43NDAsMC43NjQsMC41NjcsMC41NzgsMC41ODksMC41NjUsMC41NzYsMC41ODcsMC41NjQsMC41NzUsMC41ODYsMC41NjMsMC41NzUsMC41ODYKMTguMCwwLjg0OCwwLjg3NiwwLjgzOCwwLjg5MCwwLjg1OCwwLjg0MSwwLjgyNCwwLjg0OSwwLjg3MSwwLjkxMCwwLjgyOSwwLjg0NSwwLjYwMiwwLjYyMiwwLjY0MSwwLjYzMCwwLjYxMSwwLjYyMiwwLjY0MSwwLjYyOCwwLjYxMCwwLjYyMCwwLjY0MCwwLjYyOCwxLjA1MiwxLjAzNSwxLjAxMywwLjk5OSwxLjA2NywxLjA0OCwxLjAyNywxLjAwNSwxLjA2OSwxLjA1MCwxLjAyOSwxLjAwNywwLjkzMywwLjkxOSwwLjkzOCwwLjkyNywwLjkxMywwLjkzMCwwLjk0OSwwLjkzNiwwLjkxOSwwLjk0MCwwLjkyOCwwLjkxNSwwLjY3NCwwLjY5MiwwLjcxMCwwLjY4MSwwLjY2NywwLjY4OSwwLjcwNywwLjY3OCwwLjY2NCwwLjY4NiwwLjcwMywwLjY3NSwwLjY2MiwwLjY4MywwLjcwMSwwLjk4NywwLjk3MCwwLjk1MCwwLjk5NywwLjk3OSwwLjk2MCwxLjAwMCwwLjk4MiwwLjk2MywwLjc4MywwLjc2NCwwLjc4OCwwLjc4MSwwLjc2MiwwLjc4NiwwLjc3OCwwLjc1OSwwLjc4MywwLjc3NCwwLjc1NSwwLjc3OSwwLjU3OCwwLjU4OSwwLjYwMCwwLjU3NiwwLjU4NywwLjU5OCwwLjU3NSwwLjU4NiwwLjU5NywwLjU3NCwwLjU4NiwwLjU5Nwo=',
+    filename: 'growth_absorbance_template.csv',
+    mime: 'text/csv'
+  },
+  layout: {
+    b64: 'LDEsMiwzLDQsNSw2LDcsOCw5LDEwLDExLDEyCkEsIlNhbXBsZUEsYzEiLCJTYW1wbGVCLGMxIiwiU2FtcGxlQyxjMSIsIlNhbXBsZUQsYzEiLCJTYW1wbGVFLGMxIiwiU2FtcGxlRixjMSIsIlNhbXBsZUcsYzEiLCJTYW1wbGVILGMxIiwiU2FtcGxlSSxjMSIsIlNhbXBsZUosYzEiLENvbnRyb2wsQ29udHJvbApCLCJTYW1wbGVBLGMxIiwiU2FtcGxlQixjMSIsIlNhbXBsZUMsYzEiLCJTYW1wbGVELGMxIiwiU2FtcGxlRSxjMSIsIlNhbXBsZUYsYzEiLCJTYW1wbGVHLGMxIiwiU2FtcGxlSCxjMSIsIlNhbXBsZUksYzEiLCJTYW1wbGVKLGMxIixDb250cm9sLENvbnRyb2wKQywiU2FtcGxlQSxjMiIsIlNhbXBsZUIsYzIiLCJTYW1wbGVDLGMyIiwiU2FtcGxlRCxjMiIsIlNhbXBsZUUsYzIiLCJTYW1wbGVGLGMyIiwiU2FtcGxlRyxjMiIsIlNhbXBsZUgsYzIiLCJTYW1wbGVJLGMyIiwiU2FtcGxlSixjMiIsQ29udHJvbCxDb250cm9sCkQsIlNhbXBsZUEsYzIiLCJTYW1wbGVCLGMyIiwiU2FtcGxlQyxjMiIsIlNhbXBsZUQsYzIiLCJTYW1wbGVFLGMyIiwiU2FtcGxlRixjMiIsIlNhbXBsZUcsYzIiLCJTYW1wbGVILGMyIiwiU2FtcGxlSSxjMiIsIlNhbXBsZUosYzIiLENvbnRyb2wsQ29udHJvbApFLCJTYW1wbGVBLGMzIiwiU2FtcGxlQixjMyIsIlNhbXBsZUMsYzMiLCJTYW1wbGVELGMzIiwiU2FtcGxlRSxjMyIsIlNhbXBsZUYsYzMiLCJTYW1wbGVHLGMzIiwiU2FtcGxlSCxjMyIsIlNhbXBsZUksYzMiLCJTYW1wbGVKLGMzIixDb250cm9sLENvbnRyb2wKRiwiU2FtcGxlQSxjMyIsIlNhbXBsZUIsYzMiLCJTYW1wbGVDLGMzIiwiU2FtcGxlRCxjMyIsIlNhbXBsZUUsYzMiLCJTYW1wbGVGLGMzIiwiU2FtcGxlRyxjMyIsIlNhbXBsZUgsYzMiLCJTYW1wbGVJLGMzIiwiU2FtcGxlSixjMyIsQ29udHJvbCxDb250cm9sCkcsRXh0cmFDdHJsMSxFeHRyYUN0cmwyLEV4dHJhQ3RybDMsRXh0cmFDdHJsNCxFeHRyYUN0cmwxLEV4dHJhQ3RybDIsRXh0cmFDdHJsMyxFeHRyYUN0cmw0LEV4dHJhQ3RybDEsRXh0cmFDdHJsMixFeHRyYUN0cmwzLEV4dHJhQ3RybDQKSCwsLCwsLCwsLCwsLAo=',
+    filename: 'growth_layout_template.csv',
+    mime: 'text/csv'
+  }
 };
 
-// ═══════════════════════════════════════════════
-// NAVIGATION
-// ═══════════════════════════════════════════════
+function downloadTemplate(type) {
+  const t = TEMPLATES[type];
+  const bytes = atob(t.b64);
+  const arr = new Uint8Array(bytes.length);
+  for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+  const blob = new Blob([arr], { type: t.mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = t.filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function toggleAbout() { document.getElementById('aboutPanel').classList.toggle('open'); }
+
+// ── State ──────────────────────────────────────────────────────────────────
+const state = {
+  rawDf: null, plateType: '96', processedDf: null,
+  wellNameMap: {}, sampleColors: {}, currentStep: 1,
+};
+
+// ── Navigation ─────────────────────────────────────────────────────────────
 const stepLabels = ['Upload','Name wells','Heatmap','Results'];
 
 function goToStep(n) {
@@ -575,57 +667,21 @@ function goToStep(n) {
   });
   document.getElementById('step-label').textContent = stepLabels[n-1];
   document.body.classList.toggle('results-active', n === 4);
-  // If landing on results, nudge Plotly to refit once the CSS transition settles
-  if (n === 4) {
-    setTimeout(() => {
-      const el = document.getElementById('linePlot');
-      if (el && el.data) Plotly.Plots.resize(el);
-    }, 350);
-  }
+  if (n === 4) setTimeout(() => { const el = document.getElementById('linePlot'); if (el && el.data) Plotly.Plots.resize(el); }, 350);
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
-function goToStep2() {
-  buildWellGrid();
-  goToStep(2);
-}
+function goToStep2() { buildWellGrid(); goToStep(2); }
 
-// ═══════════════════════════════════════════════
-// STEP 1 — FILE UPLOAD
-// ═══════════════════════════════════════════════
-document.querySelectorAll('input[name=plateType]').forEach(r => {
-  r.addEventListener('change', e => {
-    state.plateType = e.target.value;
-    document.getElementById('opt96').classList.toggle('selected', state.plateType === '96');
-    document.getElementById('opt384').classList.toggle('selected', state.plateType === '384');
-  });
-});
-
-document.getElementById('opt96').addEventListener('click', () => {
-  document.querySelector('input[value="96"]').checked = true;
-  state.plateType = '96';
-  document.getElementById('opt96').classList.add('selected');
-  document.getElementById('opt384').classList.remove('selected');
-});
-document.getElementById('opt384').addEventListener('click', () => {
-  document.querySelector('input[value="384"]').checked = true;
-  state.plateType = '384';
-  document.getElementById('opt384').classList.add('selected');
-  document.getElementById('opt96').classList.remove('selected');
-});
+// ── Step 1: File upload ────────────────────────────────────────────────────
+document.getElementById('opt96').addEventListener('click', () => { document.querySelector('input[value="96"]').checked = true; state.plateType = '96'; document.getElementById('opt96').classList.add('selected'); document.getElementById('opt384').classList.remove('selected'); });
+document.getElementById('opt384').addEventListener('click', () => { document.querySelector('input[value="384"]').checked = true; state.plateType = '384'; document.getElementById('opt384').classList.add('selected'); document.getElementById('opt96').classList.remove('selected'); });
 
 const uploadZone = document.getElementById('uploadZone');
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
-uploadZone.addEventListener('drop', e => {
-  e.preventDefault();
-  uploadZone.classList.remove('dragover');
-  const f = e.dataTransfer.files[0];
-  if (f) processFile(f);
-});
-document.getElementById('csvFile').addEventListener('change', e => {
-  if (e.target.files[0]) processFile(e.target.files[0]);
-});
+uploadZone.addEventListener('drop', e => { e.preventDefault(); uploadZone.classList.remove('dragover'); const f = e.dataTransfer.files[0]; if (f) processFile(f); });
+document.getElementById('csvFile').addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
 
 function processFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
@@ -648,26 +704,12 @@ function processFile(file) {
       status.innerHTML = `<div class="alert alert-error">Failed to read file: ${err.message}</div>`;
       return;
     }
-
-    if (!rows || rows.length === 0) {
-      status.innerHTML = `<div class="alert alert-error">File appears to be empty.</div>`;
-      return;
-    }
-
-    // Strip trailing unnamed cols
-    rows = rows.map(row => {
-      const clean = {};
-      for (const [k,v] of Object.entries(row)) {
-        const kk = k.trim();
-        if (!kk.startsWith('Unnamed:') && kk !== '') clean[kk] = v;
-      }
-      return clean;
-    });
+    if (!rows || rows.length === 0) { status.innerHTML = `<div class="alert alert-error">File appears to be empty.</div>`; return; }
+    rows = rows.map(row => { const clean = {}; for (const [k,v] of Object.entries(row)) { const kk = k.trim(); if (!kk.startsWith('Unnamed:') && kk !== '') clean[kk] = v; } return clean; });
 
     const cols = Object.keys(rows[0]);
     const expected = state.plateType === '96' ? 97 : 385;
     const errorBox = document.getElementById('errorBox');
-
     document.getElementById('previewSection').style.display = 'block';
     document.getElementById('previewRows').textContent = `(${rows.length} rows)`;
 
@@ -675,7 +717,7 @@ function processFile(file) {
       document.getElementById('columnBadge').textContent = `${cols.length} cols`;
       document.getElementById('columnBadge').className = 'badge badge-red';
       errorBox.style.display = 'block';
-      errorBox.innerHTML = `<div class="alert alert-error">Column mismatch: expected ${expected} columns for a ${state.plateType}-well plate but found ${cols.length}. Please check your file or change the plate type.</div>`;
+      errorBox.innerHTML = `<div class="alert alert-error">Column mismatch: expected ${expected} columns for a ${state.plateType}-well plate but found ${cols.length}. Check your file or change the plate type above.</div>`;
       document.getElementById('continueBtn').disabled = true;
       document.getElementById('continueBtn').style.opacity = '0.4';
     } else {
@@ -686,14 +728,11 @@ function processFile(file) {
       document.getElementById('continueBtn').style.opacity = '1';
     }
 
-    // Normalize time column
     rows = normalizeTime(rows);
-
     state.rawDf = rows;
     status.innerHTML = `<div class="alert alert-success">Loaded: <strong>${file.name}</strong></div>`;
     renderPreviewTable(rows.slice(0,15));
   };
-
   if (ext === 'csv') reader.readAsText(file);
   else reader.readAsBinaryString(file);
 }
@@ -702,16 +741,11 @@ function normalizeTime(rows) {
   const keys = Object.keys(rows[0]);
   let timeKey = keys.find(k => k === 'Time') || keys.find(k => k === 'Duration (Hours)') || keys.find(k => k === 'Duration (Minutes)');
   if (!timeKey) return rows;
-
   return rows.map(row => {
     const newRow = {};
     for (const [k,v] of Object.entries(row)) {
-      if (k === timeKey) {
-        const val = parseFloat(v);
-        newRow['Time'] = timeKey === 'Duration (Minutes)' ? val/60 : val;
-      } else {
-        newRow[k] = v;
-      }
+      if (k === timeKey) { const val = parseFloat(v); newRow['Time'] = timeKey === 'Duration (Minutes)' ? val/60 : val; }
+      else { newRow[k] = v; }
     }
     return newRow;
   }).filter(r => !isNaN(r['Time']));
@@ -719,7 +753,7 @@ function normalizeTime(rows) {
 
 function renderPreviewTable(rows) {
   if (!rows || rows.length === 0) return;
-  const cols = Object.keys(rows[0]).slice(0, 20); // show first 20 cols
+  const cols = Object.keys(rows[0]).slice(0, 20);
   let html = '<table><thead><tr>';
   cols.forEach(c => { html += `<th>${c}</th>`; });
   if (Object.keys(rows[0]).length > 20) html += '<th>…</th>';
@@ -741,9 +775,7 @@ function resetStep1() {
   state.rawDf = null;
 }
 
-// ═══════════════════════════════════════════════
-// STEP 2 — PLATE MAP / WELL NAMES
-// ═══════════════════════════════════════════════
+// ── Step 2: Plate map ──────────────────────────────────────────────────────
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0 && tab==='upload') || (i===1 && tab==='manual')));
   document.getElementById('tab-upload').classList.toggle('active', tab==='upload');
@@ -751,115 +783,63 @@ function switchTab(tab) {
 }
 
 document.getElementById('plateMapFile').addEventListener('change', function() {
-  const f = this.files[0];
-  if (!f) return;
-  Papa.parse(f, {
-    header: false,
-    skipEmptyLines: false,
-    complete: result => {
-      const data = result.data;
-      // first row = column headers (1,2,3…), first col = row labels (A,B,C…)
-      const headers = data[0].slice(1);
-      let html = '<table class="platemap-preview"><thead><tr><th></th>';
-      headers.forEach(h => { html += `<th>${h}</th>`; });
-      html += '</tr></thead><tbody>';
-      const map = {};
-      for (let i=1; i<data.length; i++) {
-        const rowLabel = String(data[i][0]).trim();
-        if (!rowLabel) continue;
-        html += `<tr><th>${rowLabel}</th>`;
-        for (let j=1; j<data[i].length; j++) {
-          const val = String(data[i][j]||'').trim();
-          const wellId = `${rowLabel}${headers[j-1]||j}`;
-          if (val) map[wellId] = val;
-          html += `<td style="${val?'background:var(--accent-light);color:var(--accent)':''}">${val||''}</td>`;
-        }
-        html += '</tr>';
+  const f = this.files[0]; if (!f) return;
+  Papa.parse(f, { header: false, skipEmptyLines: false, complete: result => {
+    const data = result.data;
+    const headers = data[0].slice(1);
+    let html = '<table class="platemap-preview"><thead><tr><th></th>';
+    headers.forEach(h => { html += `<th>${h}</th>`; });
+    html += '</tr></thead><tbody>';
+    const map = {};
+    for (let i=1; i<data.length; i++) {
+      const rowLabel = String(data[i][0]).trim();
+      if (!rowLabel) continue;
+      html += `<tr><th>${rowLabel}</th>`;
+      for (let j=1; j<data[i].length; j++) {
+        const val = String(data[i][j]||'').trim();
+        const wellId = `${rowLabel}${headers[j-1]||j}`;
+        if (val) map[wellId] = val;
+        html += `<td style="${val?'background:var(--accent-light);color:var(--accent)':''}">${val||''}</td>`;
       }
-      html += '</tbody></table>';
-      state.wellNameMap = map;
-      document.getElementById('plateMapPreview').style.display = 'block';
-      document.getElementById('plateMapTable').innerHTML = html;
+      html += '</tr>';
     }
-  });
+    html += '</tbody></table>';
+    state.wellNameMap = map;
+    document.getElementById('plateMapPreview').style.display = 'block';
+    document.getElementById('plateMapTable').innerHTML = html;
+  }});
 });
 
 function buildWellGrid() {
   const is96 = state.plateType === '96';
-  const rows = is96 ? 8 : 16;
-  const cols = is96 ? 12 : 24;
+  const rows = is96 ? 8 : 16; const cols = is96 ? 12 : 24;
   const rowLabels = Array.from({length:rows}, (_,i) => String.fromCharCode(65+i));
   const colLabels = Array.from({length:cols}, (_,i) => String(i+1));
-
   const grid = document.getElementById('wellGrid');
   grid.className = `well-grid ${is96 ? 'grid-96' : 'grid-384'}`;
   grid.innerHTML = '';
-
   if (!is96) document.getElementById('scrollNotice').style.display = 'block';
-
-  // Corner
-  const corner = document.createElement('div');
-  corner.className = 'well-header-cell';
-  grid.appendChild(corner);
-
-  // Col headers
-  colLabels.forEach(cl => {
-    const d = document.createElement('div');
-    d.className = 'well-header-cell';
-    d.style.fontSize = is96 ? '11px' : '9px';
-    d.textContent = cl;
-    grid.appendChild(d);
-  });
-
-  // Rows
+  const corner = document.createElement('div'); corner.className = 'well-header-cell'; grid.appendChild(corner);
+  colLabels.forEach(cl => { const d = document.createElement('div'); d.className = 'well-header-cell'; d.style.fontSize = is96 ? '11px' : '9px'; d.textContent = cl; grid.appendChild(d); });
   rowLabels.forEach(rl => {
-    const label = document.createElement('div');
-    label.className = 'well-row-label';
-    label.textContent = rl;
-    grid.appendChild(label);
+    const label = document.createElement('div'); label.className = 'well-row-label'; label.textContent = rl; grid.appendChild(label);
     colLabels.forEach(cl => {
-      const inp = document.createElement('input');
-      inp.type = 'text';
-      inp.className = 'well-input';
-      inp.dataset.well = `${rl}${cl}`;
-      inp.placeholder = is96 ? '' : '';
-      inp.title = `${rl}${cl}`;
-      if (state.wellNameMap[`${rl}${cl}`]) {
-        inp.value = state.wellNameMap[`${rl}${cl}`];
-        inp.classList.add('filled');
-      }
-      inp.addEventListener('input', function() {
-        this.classList.toggle('filled', this.value.trim() !== '');
-      });
+      const inp = document.createElement('input'); inp.type = 'text'; inp.className = 'well-input'; inp.dataset.well = `${rl}${cl}`; inp.title = `${rl}${cl}`;
+      if (state.wellNameMap[`${rl}${cl}`]) { inp.value = state.wellNameMap[`${rl}${cl}`]; inp.classList.add('filled'); }
+      inp.addEventListener('input', function() { this.classList.toggle('filled', this.value.trim() !== ''); });
       grid.appendChild(inp);
     });
   });
 }
 
-function clearAllWells() {
-  document.querySelectorAll('.well-input').forEach(i => { i.value=''; i.classList.remove('filled'); });
-}
-
-function fillSamplePattern() {
-  // Demo pattern: well ID as name
-  document.querySelectorAll('.well-input').forEach(i => {
-    i.value = i.dataset.well;
-    i.classList.add('filled');
-  });
-}
+function clearAllWells() { document.querySelectorAll('.well-input').forEach(i => { i.value=''; i.classList.remove('filled'); }); }
+function fillSamplePattern() { document.querySelectorAll('.well-input').forEach(i => { i.value = i.dataset.well; i.classList.add('filled'); }); }
 
 function applyPlateMap() {
   const activeTab = document.querySelector('.tab.active').textContent.trim();
   let wellNameMap = {};
-
-  if (activeTab === 'Upload plate map') {
-    wellNameMap = state.wellNameMap;
-  } else {
-    document.querySelectorAll('.well-input').forEach(inp => {
-      const val = inp.value.trim();
-      if (val) wellNameMap[inp.dataset.well] = val;
-    });
-  }
+  if (activeTab === 'Upload plate map') { wellNameMap = state.wellNameMap; }
+  else { document.querySelectorAll('.well-input').forEach(inp => { const val = inp.value.trim(); if (val) wellNameMap[inp.dataset.well] = val; }); }
 
   if (Object.keys(wellNameMap).length === 0) {
     document.getElementById('mapError').style.display = 'block';
@@ -868,15 +848,9 @@ function applyPlateMap() {
   }
   document.getElementById('mapError').style.display = 'none';
 
-  // Build renamed dataframe
-  const df = state.rawDf;
-  const cols = Object.keys(df[0]);
+  const df = state.rawDf; const cols = Object.keys(df[0]);
   const wells = Object.keys(wellNameMap).filter(w => cols.includes(w));
-  const keepCols = ['Time', ...wells];
-
-  // Rename with duplicate handling
-  const nameCounter = {};
-  const renameMap = {};
+  const nameCounter = {}; const renameMap = {};
   wells.forEach(well => {
     const name = wellNameMap[well];
     nameCounter[name] = (nameCounter[name]||0);
@@ -886,100 +860,56 @@ function applyPlateMap() {
 
   const processed = df.map(row => {
     const newRow = { Time: row['Time'] };
-    wells.forEach(well => {
-      newRow[renameMap[well]] = row[well];
-    });
+    wells.forEach(well => { newRow[renameMap[well]] = row[well]; });
     return newRow;
   });
 
   state.processedDf = processed;
   state.wellNameMap = wellNameMap;
-
-  // Assign default colors
   const uniqueSamples = getUniqueSamples(processed);
-  uniqueSamples.forEach(s => {
-    if (!state.sampleColors[s]) state.sampleColors[s] = stringToColor(s);
-  });
-
+  uniqueSamples.forEach(s => { if (!state.sampleColors[s]) state.sampleColors[s] = stringToColor(s); });
   renderHeatmap();
   goToStep(3);
 }
 
-// ═══════════════════════════════════════════════
-// STEP 3 — HEATMAP
-// ═══════════════════════════════════════════════
+// ── Step 3: Heatmap ────────────────────────────────────────────────────────
 function renderHeatmap() {
   const is96 = state.plateType === '96';
-  const rows = is96 ? 8 : 16;
-  const cols = is96 ? 12 : 24;
+  const rows = is96 ? 8 : 16; const cols = is96 ? 12 : 24;
   const rowLabels = Array.from({length:rows}, (_,i) => String.fromCharCode(65+i));
   const colLabels = Array.from({length:cols}, (_,i) => String(i+1));
-
   const df = state.rawDf;
   const dfCols = Object.keys(df[0]).filter(c => c !== 'Time');
   const wellCols = dfCols.slice(0, rows*cols);
-
   const maxVals = {};
-  wellCols.forEach(col => {
-    const vals = df.map(r => parseFloat(r[col])).filter(v => !isNaN(v));
-    maxVals[col] = vals.length ? Math.max(...vals) : 0;
-  });
+  wellCols.forEach(col => { const vals = df.map(r => parseFloat(r[col])).filter(v => !isNaN(v)); maxVals[col] = vals.length ? Math.max(...vals) : 0; });
 
-  const zData = [];
-  const textData = [];
+  const zData = [], textData = [];
   for (let r=0; r<rows; r++) {
     const rowZ = [], rowText = [];
     for (let c=0; c<cols; c++) {
-      const col = wellCols[r*cols+c];
-      const v = col !== undefined ? (maxVals[col]||0) : 0;
-      rowZ.push(v);
-      rowText.push(col ? `${col}<br>Max: ${v.toFixed(3)}` : '');
+      const col = wellCols[r*cols+c]; const v = col !== undefined ? (maxVals[col]||0) : 0;
+      rowZ.push(v); rowText.push(col ? `${col}<br>Max: ${v.toFixed(3)}` : '');
     }
-    zData.push(rowZ);
-    textData.push(rowText);
+    zData.push(rowZ); textData.push(rowText);
   }
 
-  const layout = {
-    margin: {l:50, r:20, t:20, b:40},
+  Plotly.newPlot('heatmapPlot', [{
+    type: 'heatmap', z: zData, colorscale: 'YlOrRd', xgap: 2, ygap: 2,
+    hovertemplate: '%{text}<extra></extra>', text: textData, showscale: true,
+  }], {
+    margin: {l:50,r:20,t:20,b:40},
     xaxis: {tickvals: colLabels.map((_,i)=>i), ticktext: colLabels, side:'top', fixedrange:true},
     yaxis: {tickvals: rowLabels.map((_,i)=>i), ticktext: rowLabels, autorange:'reversed', fixedrange:true},
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
     height: is96 ? 340 : 520,
-  };
-
-  Plotly.newPlot('heatmapPlot', [{
-    type: 'heatmap',
-    z: zData,
-    colorscale: 'YlOrRd',
-    xgap: 2, ygap: 2,
-    hovertemplate: '%{text}<extra></extra>',
-    text: textData,
-    showscale: true,
-  }], layout, {displayModeBar:false, responsive:true});
+  }, {displayModeBar:false, responsive:true});
 }
 
-// ═══════════════════════════════════════════════
-// STEP 4 — RESULTS
-// ═══════════════════════════════════════════════
-function goToStep4() {
-  renderResults();
-  goToStep(4);
-}
+// ── Step 4: Results ────────────────────────────────────────────────────────
+document.getElementById('step3').querySelector('.btn-primary').addEventListener('click', () => { renderResults(); goToStep(4); });
 
-document.getElementById('step3').querySelector('.btn-primary').addEventListener('click', () => {
-  renderResults();
-  goToStep(4);
-});
-
-function renderResults() {
-  buildColorPickers();
-  renderLinePlot();
-  renderGrowthPlot();
-  renderAUCPlot();
-  renderStatCards();
-  renderSummaryTable();
-}
+function renderResults() { buildColorPickers(); renderLinePlot(); renderGrowthPlot(); renderAUCPlot(); renderStatCards(); renderSummaryTable(); }
 
 function getUniqueSamples(df) {
   const cols = Object.keys(df[0]).filter(c => c !== 'Time');
@@ -994,38 +924,27 @@ function naturalSort(a, b) {
 }
 
 function stringToColor(s) {
-  let h = 0;
-  for (let i=0; i<s.length; i++) h = ((h<<5)-h)+s.charCodeAt(i);
+  let h = 0; for (let i=0; i<s.length; i++) h = ((h<<5)-h)+s.charCodeAt(i);
   const hue = ((h % 360) + 360) % 360;
   return `hsl(${hue},55%,45%)`;
 }
 
 function buildColorPickers() {
   const samples = getUniqueSamples(state.processedDf);
-  const container = document.getElementById('colorPickers');
-  container.innerHTML = '';
+  const container = document.getElementById('colorPickers'); container.innerHTML = '';
   samples.forEach(s => {
     const color = state.sampleColors[s] || stringToColor(s);
-    const div = document.createElement('div');
-    div.className = 'color-item';
-    div.innerHTML = `<input type="color" value="${hslToHex(color)}" data-sample="${s}">
-      <span class="color-item-name" title="${s}">${s}</span>`;
-    div.querySelector('input').addEventListener('input', function() {
-      state.sampleColors[this.dataset.sample] = this.value;
-      renderLinePlot(); renderGrowthPlot(); renderAUCPlot();
-    });
+    const div = document.createElement('div'); div.className = 'color-item';
+    div.innerHTML = `<input type="color" value="${hslToHex(color)}" data-sample="${s}"><span class="color-item-name" title="${s}">${s}</span>`;
+    div.querySelector('input').addEventListener('input', function() { state.sampleColors[this.dataset.sample] = this.value; renderLinePlot(); renderGrowthPlot(); renderAUCPlot(); });
     container.appendChild(div);
   });
 }
 
 function randomizeColors() {
   const samples = getUniqueSamples(state.processedDf);
-  samples.forEach(s => {
-    const h = Math.floor(Math.random()*360);
-    state.sampleColors[s] = `hsl(${h},55%,45%)`;
-  });
-  buildColorPickers();
-  renderLinePlot(); renderGrowthPlot(); renderAUCPlot();
+  samples.forEach(s => { const h = Math.floor(Math.random()*360); state.sampleColors[s] = `hsl(${h},55%,45%)`; });
+  buildColorPickers(); renderLinePlot(); renderGrowthPlot(); renderAUCPlot();
 }
 
 function hslToHex(hsl) {
@@ -1046,14 +965,12 @@ function groupByTime(df, sample) {
   const cols = Object.keys(df[0]).filter(c => c === sample || c.match(new RegExp(`^${escRe(sample)}_\\d+$`)));
   const byTime = {};
   df.forEach(row => {
-    const t = row.Time;
-    if (!byTime[t]) byTime[t] = [];
+    const t = row.Time; if (!byTime[t]) byTime[t] = [];
     cols.forEach(c => { const v=parseFloat(row[c]); if(!isNaN(v)) byTime[t].push(v); });
   });
   const times = Object.keys(byTime).map(Number).sort((a,b)=>a-b);
   return times.map(t => ({
-    t,
-    mean: byTime[t].reduce((a,b)=>a+b,0)/byTime[t].length,
+    t, mean: byTime[t].reduce((a,b)=>a+b,0)/byTime[t].length,
     std: byTime[t].length > 1 ? Math.sqrt(byTime[t].map(v=>(v-byTime[t].reduce((a,b)=>a+b,0)/byTime[t].length)**2).reduce((a,b)=>a+b,0)/(byTime[t].length-1)) : 0
   }));
 }
@@ -1066,99 +983,56 @@ function renderLinePlot() {
     const grouped = groupByTime(state.processedDf, s);
     const color = state.sampleColors[s] || stringToColor(s);
     return {
-      x: grouped.map(d=>d.t),
-      y: grouped.map(d=>d.mean),
+      x: grouped.map(d=>d.t), y: grouped.map(d=>d.mean),
       error_y: { type:'data', array: grouped.map(d=>d.std), visible:true, color:color, thickness:1.2, width:3 },
-      mode: 'lines+markers',
-      name: s,
-      line: {color, width:2},
-      marker: {color, size:5},
+      mode: 'lines+markers', name: s,
+      line: {color, width:2}, marker: {color, size:5},
       hovertemplate: `<b>${s}</b><br>Time: %{x:.2f}h<br>OD: %{y:.4f}<extra></extra>`,
     };
   });
 
-  const layout = {
-    margin: {l:60, r:30, t:20, b:60},
-    xaxis: { title:{text:'Time (hours)', font:{size:12}}, mirror:true, showline:true, linecolor:'#ccc', ticks:'outside', gridcolor:'#f0efe9' },
-    yaxis: { title:{text:'OD600nm', font:{size:12}}, mirror:true, showline:true, linecolor:'#ccc', ticks:'outside', gridcolor:'#f0efe9' },
-    paper_bgcolor: 'rgba(0,0,0,0)',
-    plot_bgcolor: 'rgba(0,0,0,0)',
-    legend: {bgcolor:'rgba(0,0,0,0)', borderwidth:0, font:{size:11}},
-    height: 580,
-    autosize: true,
-    font: {family: 'DM Mono, monospace', size:11, color:'#6b6860'},
-  };
-
   const plotEl = document.getElementById('linePlot');
-  Plotly.newPlot(plotEl, traces, layout, {
-    responsive: true,
-    displaylogo: false,
-    modeBarButtonsToRemove: ['select2d','lasso2d'],
-    doubleClick: false,
-  });
+  Plotly.newPlot(plotEl, traces, {
+    margin: {l:60,r:30,t:20,b:60},
+    xaxis: { title:{text:'Time (hours)',font:{size:12}}, mirror:true, showline:true, linecolor:'#ccc', ticks:'outside', gridcolor:'#f0efe9' },
+    yaxis: { title:{text:'OD600nm',font:{size:12}}, mirror:true, showline:true, linecolor:'#ccc', ticks:'outside', gridcolor:'#f0efe9' },
+    paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
+    legend: {bgcolor:'rgba(0,0,0,0)', borderwidth:0, font:{size:11}},
+    height: 580, autosize: true,
+    font: {family: 'DM Mono, monospace', size:11, color:'#6b6860'},
+  }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d'], doubleClick:false});
 
-  // Wait for the CSS max-width transition (300ms) to finish, then tell Plotly to refit
   setTimeout(() => Plotly.Plots.resize(plotEl), 350);
 
-  // Double-click on a trace: isolate it (show only that one). Double-click again: restore all.
-  plotEl.removeAllListeners && plotEl.removeAllListeners('plotly_doubleclick');
-  plotEl.on('plotly_doubleclick', () => {
-    // no-op: suppress default zoom-reset on empty canvas double-click
-  });
-
-  // Use legend double-click to isolate/restore
-  plotEl.removeAllListeners && plotEl.removeAllListeners('plotly_legenddoubleclick');
   plotEl.on('plotly_legenddoubleclick', evt => {
-    const clickedIdx = evt.curveNumber;
-    const currentData = plotEl.data;
+    const clickedIdx = evt.curveNumber; const currentData = plotEl.data;
     const allHidden = currentData.every((t, i) => i === clickedIdx ? true : t.visible === 'legendonly');
     const allVisible = currentData.every(t => t.visible !== 'legendonly');
     const update = { visible: [] };
-    if (allHidden || allVisible) {
-      // isolate clicked trace
-      currentData.forEach((_, i) => { update.visible.push(i === clickedIdx ? true : 'legendonly'); });
-    } else {
-      // restore all
-      currentData.forEach(() => { update.visible.push(true); });
-    }
-    Plotly.restyle(plotEl, update);
-    return false;
+    if (allHidden || allVisible) { currentData.forEach((_, i) => { update.visible.push(i === clickedIdx ? true : 'legendonly'); }); }
+    else { currentData.forEach(() => { update.visible.push(true); }); }
+    Plotly.restyle(plotEl, update); return false;
   });
 }
 
 function calcMaxGrowthRate(df) {
-  const allCols = Object.keys(df[0]).filter(c => c !== 'Time');
-  const result = {};
+  const allCols = Object.keys(df[0]).filter(c => c !== 'Time'); const result = {};
   allCols.forEach(col => {
-    const base = col.replace(/_\d+$/, '');
-    const sorted = [...df].sort((a,b)=>a.Time-b.Time);
+    const base = col.replace(/_\d+$/, ''); const sorted = [...df].sort((a,b)=>a.Time-b.Time);
     let maxRate = 0;
-    for (let i=1; i<sorted.length; i++) {
-      const dt = sorted[i].Time - sorted[i-1].Time;
-      if (dt <= 0) continue;
-      const dod = parseFloat(sorted[i][col]) - parseFloat(sorted[i-1][col]);
-      const rate = Math.max(0, dod/dt);
-      if (!isNaN(rate)) maxRate = Math.max(maxRate, rate);
-    }
-    if (!result[base]) result[base] = [];
-    result[base].push(maxRate);
+    for (let i=1; i<sorted.length; i++) { const dt = sorted[i].Time - sorted[i-1].Time; if (dt <= 0) continue; const dod = parseFloat(sorted[i][col]) - parseFloat(sorted[i-1][col]); const rate = Math.max(0, dod/dt); if (!isNaN(rate)) maxRate = Math.max(maxRate, rate); }
+    if (!result[base]) result[base] = []; result[base].push(maxRate);
   });
   return result;
 }
 
 function calcAUC(df) {
-  const allCols = Object.keys(df[0]).filter(c => c !== 'Time');
-  const result = {};
+  const allCols = Object.keys(df[0]).filter(c => c !== 'Time'); const result = {};
   allCols.forEach(col => {
-    const base = col.replace(/_\d+$/, '');
-    const sorted = [...df].sort((a,b)=>a.Time-b.Time).filter(r=>!isNaN(parseFloat(r[col])));
+    const base = col.replace(/_\d+$/, ''); const sorted = [...df].sort((a,b)=>a.Time-b.Time).filter(r=>!isNaN(parseFloat(r[col])));
     let auc = 0;
-    for (let i=1; i<sorted.length; i++) {
-      const dt = sorted[i].Time - sorted[i-1].Time;
-      auc += ((parseFloat(sorted[i][col]) + parseFloat(sorted[i-1][col]))/2) * dt;
-    }
-    if (!result[base]) result[base] = [];
-    result[base].push(auc);
+    for (let i=1; i<sorted.length; i++) { const dt = sorted[i].Time - sorted[i-1].Time; auc += ((parseFloat(sorted[i][col]) + parseFloat(sorted[i-1][col]))/2) * dt; }
+    if (!result[base]) result[base] = []; result[base].push(auc);
   });
   return result;
 }
@@ -1175,23 +1049,16 @@ function renderGrowthPlot() {
   const means = samples.map(s=>meanStd(growthData[s]).mean);
   const stds = samples.map(s=>meanStd(growthData[s]).std);
   const colors = samples.map(s=>state.sampleColors[s]||stringToColor(s));
-
-  const layout = {
-    margin:{l:60,r:30,t:20,b:100},
-    xaxis:{tickangle:-40, tickfont:{size:11}},
-    yaxis:{title:{text:'OD/hr',font:{size:12}}, gridcolor:'#f0efe9'},
-    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
-    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
-  };
-
   Plotly.newPlot('growthPlot', [{
-    type:'bar', x:samples, y:means,
-    error_y:{type:'data',array:stds,visible:true},
-    text:means.map(v=>v.toFixed(4)), textposition:'auto',
-    textfont:{size:9},
-    marker:{color:colors},
-    hovertemplate:'<b>%{x}</b><br>%{y:.4f} OD/hr<extra></extra>',
-  }], layout, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
+    type:'bar', x:samples, y:means, error_y:{type:'data',array:stds,visible:true},
+    text:means.map(v=>v.toFixed(4)), textposition:'auto', textfont:{size:9},
+    marker:{color:colors}, hovertemplate:'<b>%{x}</b><br>%{y:.4f} OD/hr<extra></extra>',
+  }], {
+    margin:{l:60,r:30,t:20,b:100}, xaxis:{tickangle:-40,tickfont:{size:11}},
+    yaxis:{title:{text:'OD/hr',font:{size:12}},gridcolor:'#f0efe9'},
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+  }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
 }
 
 function renderAUCPlot() {
@@ -1200,51 +1067,31 @@ function renderAUCPlot() {
   const means = samples.map(s=>meanStd(aucData[s]).mean);
   const stds = samples.map(s=>meanStd(aucData[s]).std);
   const colors = samples.map(s=>state.sampleColors[s]||stringToColor(s));
-
-  const layout = {
-    margin:{l:65,r:30,t:20,b:100},
-    xaxis:{tickangle:-40,tickfont:{size:11}},
-    yaxis:{title:{text:'OD·h',font:{size:12}},gridcolor:'#f0efe9'},
-    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
-    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
-  };
-
   Plotly.newPlot('aucPlot', [{
-    type:'bar', x:samples, y:means,
-    error_y:{type:'data',array:stds,visible:true},
-    text:means.map(v=>v.toFixed(3)), textposition:'auto',
-    textfont:{size:9},
-    marker:{color:colors},
-    hovertemplate:'<b>%{x}</b><br>%{y:.3f} OD·h<extra></extra>',
-  }], layout, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
+    type:'bar', x:samples, y:means, error_y:{type:'data',array:stds,visible:true},
+    text:means.map(v=>v.toFixed(3)), textposition:'auto', textfont:{size:9},
+    marker:{color:colors}, hovertemplate:'<b>%{x}</b><br>%{y:.3f} OD·h<extra></extra>',
+  }], {
+    margin:{l:65,r:30,t:20,b:100}, xaxis:{tickangle:-40,tickfont:{size:11}},
+    yaxis:{title:{text:'OD·h',font:{size:12}},gridcolor:'#f0efe9'},
+    paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
+    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+  }, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
 }
 
 function renderStatCards() {
   const samples = getUniqueSamples(state.processedDf);
   const growthData = calcMaxGrowthRate(state.processedDf);
-  const aucData = calcAUC(state.processedDf);
-
-  const allGrowth = Object.values(growthData).flat().filter(v=>!isNaN(v)&&v>0);
   const topSample = Object.entries(growthData).sort((a,b)=>meanStd(b[1]).mean-meanStd(a[1]).mean)[0];
-
-  const html = `
-    <div class="stat-card">
-      <div class="stat-label">Samples analyzed</div>
-      <div class="stat-value">${samples.length}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Fastest grower</div>
-      <div class="stat-value" style="font-size:18px;word-break:break-all">${topSample ? topSample[0] : '—'}</div>
-    </div>
-  `;
-  document.getElementById('statCards').innerHTML = html;
+  document.getElementById('statCards').innerHTML = `
+    <div class="stat-card"><div class="stat-label">Samples analyzed</div><div class="stat-value">${samples.length}</div></div>
+    <div class="stat-card"><div class="stat-label">Fastest grower</div><div class="stat-value" style="font-size:18px;word-break:break-all">${topSample ? topSample[0] : '—'}</div></div>`;
 }
 
 function renderSummaryTable() {
   const growthData = calcMaxGrowthRate(state.processedDf);
   const aucData = calcAUC(state.processedDf);
   const samples = [...new Set([...Object.keys(growthData), ...Object.keys(aucData)])].sort(naturalSort);
-
   let html = '<table><thead><tr><th>Sample</th><th>Mean max growth rate (OD/hr)</th><th>Std dev growth rate</th><th>Mean AUC (OD·h)</th><th>Std dev AUC</th></tr></thead><tbody>';
   samples.forEach(s => {
     const g = growthData[s] ? meanStd(growthData[s]) : {mean:0,std:0};
@@ -1255,15 +1102,8 @@ function renderSummaryTable() {
   document.getElementById('summaryTable').innerHTML = html;
 }
 
-// ═══════════════════════════════════════════════
-// DOWNLOADS
-// ═══════════════════════════════════════════════
-
-// Properly quote a CSV field — wraps in quotes if it contains comma, quote, or newline
-function csvField(val) {
-  const s = String(val ?? '');
-  return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g,'""')}"` : s;
-}
+// ── Downloads ──────────────────────────────────────────────────────────────
+function csvField(val) { const s = String(val ?? ''); return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g,'""')}"` : s; }
 
 function buildSummaryCSV() {
   const growthData = calcMaxGrowthRate(state.processedDf);
@@ -1278,13 +1118,8 @@ function buildSummaryCSV() {
   return csv;
 }
 
-function downloadCSV() {
-  triggerDownload(new Blob([buildSummaryCSV()],{type:'text/csv'}), 'growth_summary.csv');
-}
-
-function downloadPlotPNG(divId, filename) {
-  Plotly.downloadImage(document.getElementById(divId), {format:'png', filename, width:1200, height:500, scale:2});
-}
+function downloadCSV() { triggerDownload(new Blob([buildSummaryCSV()],{type:'text/csv'}), 'growth_summary.csv'); }
+function downloadPlotPNG(divId, filename) { Plotly.downloadImage(document.getElementById(divId), {format:'png', filename, width:1200, height:500, scale:2}); }
 
 function downloadReport() {
   const lineDiv = document.getElementById('linePlot').innerHTML;
@@ -1294,53 +1129,28 @@ function downloadReport() {
   const summaryHtml = document.getElementById('summaryTable').innerHTML;
   const csv = buildSummaryCSV();
   const csvUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
-
-  const report = `<!DOCTYPE html><html><head><meta charset="UTF-8">
-<title>Growth Analysis Report</title>
+  const report = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Growth Analysis Cerillo — Report</title>
 <script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.0/plotly.min.js"><\/script>
-<style>
-body{font-family:sans-serif;max-width:1200px;margin:2rem auto;padding:0 1rem;color:#1a1916}
-h1{font-size:26px;margin-bottom:4px} h2{font-size:18px;margin:2rem 0 8px;color:#444}
-table{width:100%;border-collapse:collapse;font-size:13px}
-th{background:#f5f5f0;padding:8px 12px;text-align:left;border-bottom:1px solid #ddd}
-td{padding:7px 12px;border-bottom:1px solid #eee}
-.dl{display:inline-block;margin:10px 0;padding:9px 18px;background:#2d5a3d;color:white;border-radius:6px;text-decoration:none;font-size:14px}
-hr{border:none;border-top:1px solid #eee;margin:2rem 0}
-</style></head><body>
-<h1>Growth Analysis Report</h1>
-<p style="color:#666;font-size:13px">Generated ${new Date().toLocaleString()}</p>
-<hr>
-<h2>Summary Data</h2>
-${summaryHtml}
-<a href="${csvUrl}" download="growth_summary.csv" class="dl">⬇ Download summary CSV</a>
-<hr>
-<h2>Optical Density Over Time</h2><div>${lineDiv}</div>
-<hr>
-<h2>Plate Heatmap (Max OD)</h2><div>${heatmapDiv}</div>
-<hr>
-<h2>Max Growth Rate</h2><div>${growthDiv}</div>
-<hr>
+<style>body{font-family:sans-serif;max-width:1200px;margin:2rem auto;padding:0 1rem;color:#1a1916}h1{font-size:26px;margin-bottom:4px}h2{font-size:18px;margin:2rem 0 8px;color:#444}table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f5f5f0;padding:8px 12px;text-align:left;border-bottom:1px solid #ddd}td{padding:7px 12px;border-bottom:1px solid #eee}.dl{display:inline-block;margin:10px 0;padding:9px 18px;background:#2d5a3d;color:white;border-radius:6px;text-decoration:none;font-size:14px}hr{border:none;border-top:1px solid #eee;margin:2rem 0}</style>
+</head><body>
+<h1>Growth Analysis Cerillo — Report</h1><p style="color:#666;font-size:13px">Generated ${new Date().toLocaleString()}</p><hr>
+<h2>Summary Data</h2>${summaryHtml}
+<a href="${csvUrl}" download="growth_summary.csv" class="dl">⬇ Download summary CSV</a><hr>
+<h2>Optical Density Over Time</h2><div>${lineDiv}</div><hr>
+<h2>Plate Heatmap (Max OD)</h2><div>${heatmapDiv}</div><hr>
+<h2>Max Growth Rate</h2><div>${growthDiv}</div><hr>
 <h2>Area Under Curve</h2><div>${aucDiv}</div>
 </body></html>`;
-
-  triggerDownload(new Blob([report],{type:'text/html'}), 'growth_analysis_report.html');
+  triggerDownload(new Blob([report],{type:'text/html'}), 'growth_analysis_cerillo_report.html');
 }
 
 function triggerDownload(blob, filename) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  URL.revokeObjectURL(a.href);
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = filename; a.click(); URL.revokeObjectURL(a.href);
 }
 
 function startOver() {
-  state.rawDf = null;
-  state.processedDf = null;
-  state.wellNameMap = {};
-  state.sampleColors = {};
-  document.getElementById('csvFile').value = '';
-  document.getElementById('uploadStatus').innerHTML = '';
+  state.rawDf = null; state.processedDf = null; state.wellNameMap = {}; state.sampleColors = {};
+  document.getElementById('csvFile').value = ''; document.getElementById('uploadStatus').innerHTML = '';
   document.getElementById('previewSection').style.display = 'none';
   goToStep(1);
 }
