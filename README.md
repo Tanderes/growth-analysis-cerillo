@@ -6,14 +6,14 @@ A standalone, browser-based growth curve analysis tool for 96-well and 384-well 
 
 ## Live App
 
-🔗 **[Open the app](https://tanderes.github.io/growth-analysis-cerillo/)** *(update after enabling GitHub Pages)*
+🔗 **[Open the app](https://tanderes.github.io/growth-analysis-cerillo/)**
 
 ---
 
 ## Features
 
 - **96-well and 384-well plate support**
-- **CSV and Excel upload** (.csv, .xls, .xlsx)
+- **CSV and Excel upload** (.csv, .xls, .xlsx) — compatible with Welly plate reader exports
 - **Plate map assignment** — upload a plate map CSV or fill in the well grid manually
 - **Interactive charts** (Plotly)
   - Optical density over time (mean ± std, per sample)
@@ -24,19 +24,20 @@ A standalone, browser-based growth curve analysis tool for 96-well and 384-well 
 - **Per-sample colour pickers** with randomise option
 - **Exports**
   - HTML report (all charts + summary table)
-  - Summary CSV (growth rate + AUC per sample, correctly quoted for sample names containing commas)
+  - Summary CSV (growth rate + AUC per sample)
   - PNG download for each bar chart
+- **Template downloads** built into the app (absorbance + layout map)
 
 ---
 
 ## Quick Start
 
 ```
-1. Download index.html
-2. Open it in any modern browser (Chrome, Firefox, Safari, Edge)
-3. Upload your plate reader file
-4. Upload or fill in a plate map
-5. Explore and export results
+1. Go to https://tanderes.github.io/growth-analysis-cerillo/
+   — or — download index.html and open it in any modern browser
+2. Upload your plate reader CSV or Excel file
+3. Upload or fill in a plate map
+4. Explore and export results
 ```
 
 No Python, no Node, no dependencies to install. All libraries load from CDN.
@@ -56,15 +57,16 @@ Expected columns: **97** for 96-well, **385** for 384-well (time + wells).
 
 ### Plate map CSV
 
-Rows = plate rows (A–H or A–P), columns = plate columns (1–12 or 1–24). Cell values = sample names. Sample names containing commas should be wrapped in quotes.
+Rows = plate rows (A–H or A–P), columns = plate columns (1–12 or 1–24). Cell values = sample names. Wells with the same name are grouped as replicates.
 
 ```
 ,1,2,3,4,...
-A,WT,WT,Mutant1,Mutant1,...
-B,WT,WT,Mutant1,Mutant1,...
+A,SampleA + c1,SampleB + c1,SampleC + c1,Control,...
+B,SampleA + c1,SampleB + c1,SampleC + c1,Control,...
+C,SampleA + c2,SampleB + c2,SampleC + c2,Control,...
 ```
 
-Example files are in [`example_data/`](example_data/).
+Template files are available in [`example_data/`](example_data/) and as in-app downloads.
 
 ---
 
@@ -72,10 +74,10 @@ Example files are in [`example_data/`](example_data/).
 
 ```
 growth-analysis-cerillo/
-├── index.html                        # The entire app — open this
+├── index.html                             # The entire app — open this
 ├── example_data/
-│   ├── example_plate_data.csv        # 96-well plate reader output
-│   └── example_plate_map.csv         # Corresponding plate map
+│   ├── growth_absorbance_template.csv     # 96-well plate reader template
+│   └── growth_layout_template.csv        # Corresponding plate map template
 ├── LICENSE
 └── README.md
 ```
@@ -86,9 +88,8 @@ growth-analysis-cerillo/
 
 1. Push this repo to GitHub
 2. Go to **Settings → Pages**
-3. Source: **GitHub Actions**
-4. The included workflow deploys automatically on every push to `main`
-5. Your app will be live at `https://YOUR-USERNAME.github.io/growth-analysis-cerillo/`
+3. Source: **Deploy from a branch → main / root**
+4. Your app will be live at `https://YOUR-USERNAME.github.io/growth-analysis-cerillo/`
 
 ---
 
