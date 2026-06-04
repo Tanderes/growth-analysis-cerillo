@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Growth Analysis</title>
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.0/plotly.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e2e0d8;
+    --border2: #ccc9be;
+    --text: #1a1916;
+    --text2: #6b6860;
+    --text3: #9e9b93;
+    --accent: #2d5a3d;
+    --accent-light: #e8f2eb;
+    --accent2: #8b6914;
+    --accent2-light: #fdf3dc;
+    --danger: #8b2020;
+    --danger-light: #fde8e8;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --radius: 8px;
+    --radius-lg: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    color: var(--accent);
+    text-transform: uppercase;
+  }
+  .step-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: var(--mono);
+  }
+  .step-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--border2);
+    transition: background 0.3s;
+  }
+  .step-dot.active { background: var(--accent); }
+  .step-dot.done { background: var(--accent); opacity: 0.45; }
+
+  /* ── Layout ── */
+  main { max-width: 960px; margin: 0 auto; padding: 2.5rem 1.5rem 4rem; transition: max-width 0.3s ease; }
+  body.results-active main { max-width: 1400px; padding-left: 2rem; padding-right: 2rem; }
+
+  /* ── Steps ── */
+  .step { display: none; }
+  .step.active { display: block; animation: fadeUp 0.28s ease both; }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Typography ── */
+  h1 { font-size: 28px; font-weight: 500; letter-spacing: -0.02em; margin-bottom: 6px; }
+  h2 { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 4px; }
+  h3 { font-size: 14px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text2); margin-bottom: 12px; }
+  p { color: var(--text2); }
+  .page-header { margin-bottom: 2rem; }
+  .page-header p { margin-top: 4px; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.25rem;
+  }
+  .card-sm { padding: 1rem 1.25rem; }
+
+  /* ── Form elements ── */
+  label { font-size: 13px; font-weight: 500; color: var(--text2); display: block; margin-bottom: 5px; }
+  input[type=text], select, input[type=file] {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 14px;
+    background: var(--surface);
+    color: var(--text);
+    transition: border-color 0.15s;
+    outline: none;
+  }
+  input[type=text]:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(45,90,61,0.1); }
+  input[type=file] { padding: 7px 12px; cursor: pointer; font-family: var(--mono); font-size: 12px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .form-group { margin-bottom: 1rem; }
+
+  /* ── Radio plate type ── */
+  .plate-options { display: flex; gap: 10px; }
+  .plate-option {
+    flex: 1;
+    border: 1.5px solid var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 1rem 1.25rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .plate-option:hover { border-color: var(--accent); background: var(--accent-light); }
+  .plate-option.selected { border-color: var(--accent); background: var(--accent-light); }
+  .plate-option input { display: none; }
+  .plate-option .plate-num { font-size: 24px; font-family: var(--mono); font-weight: 500; color: var(--accent); }
+  .plate-option .plate-label { font-size: 12px; color: var(--text2); margin-top: 2px; }
+
+  /* ── Buttons ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 20px;
+    border-radius: var(--radius);
+    font-family: var(--sans);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #245030; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border2); }
+  .btn-secondary:hover { background: var(--border); }
+  .btn-danger { background: var(--danger-light); color: var(--danger); border: 1px solid #f0c0c0; }
+  .btn-danger:hover { background: #fad4d4; }
+  .btn-sm { padding: 6px 14px; font-size: 13px; }
+  .btn-group { display: flex; gap: 10px; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--mono);
+  }
+  .badge-green { background: var(--accent-light); color: var(--accent); }
+  .badge-amber { background: var(--accent2-light); color: var(--accent2); }
+  .badge-red { background: var(--danger-light); color: var(--danger); }
+
+  /* ── Alert ── */
+  .alert {
+    padding: 10px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    margin-bottom: 1rem;
+    border-left: 3px solid;
+  }
+  .alert-error { background: var(--danger-light); color: var(--danger); border-color: var(--danger); }
+  .alert-success { background: var(--accent-light); color: var(--accent); border-color: var(--accent); }
+  .alert-info { background: var(--accent2-light); color: var(--accent2); border-color: var(--accent2); }
+
+  /* ── Table preview ── */
+  .table-wrap { overflow-x: auto; border-radius: var(--radius); border: 1px solid var(--border); margin-top: 1rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; font-family: var(--mono); }
+  th { background: var(--surface2); padding: 7px 10px; text-align: left; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 500; color: var(--text2); white-space: nowrap; }
+  td { padding: 6px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; color: var(--text); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface2); }
+
+  /* ── Well plate grid ── */
+  .well-grid-wrap { overflow-x: auto; }
+  .well-grid { display: inline-grid; gap: 4px; margin-top: 8px; }
+  .well-grid.grid-96 { grid-template-columns: 32px repeat(12, 46px); }
+  .well-grid.grid-384 { grid-template-columns: 28px repeat(24, 32px); }
+  .well-header-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    font-weight: 500;
+  }
+  .well-row-label {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 6px;
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text3);
+    font-weight: 500;
+  }
+  .well-input {
+    width: 100%;
+    padding: 3px 4px;
+    font-size: 9px;
+    font-family: var(--mono);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-align: center;
+    height: 28px;
+    background: var(--surface);
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .well-grid.grid-384 .well-input { font-size: 8px; height: 24px; padding: 2px 2px; }
+  .well-input:focus { border-color: var(--accent); background: var(--accent-light); outline: none; }
+  .well-input.filled { background: var(--accent-light); border-color: #a8d4b5; color: var(--accent); }
+
+  /* ── Heatmap section ── */
+  .heatmap-note { font-size: 12px; color: var(--text3); font-family: var(--mono); margin-top: 6px; }
+
+  /* ── Results ── */
+  .results-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; margin-bottom: 1.25rem; }
+  @media (max-width: 640px) { .results-grid { grid-template-columns: 1fr; } .form-row { grid-template-columns: 1fr; } }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow);
+  }
+  .stat-label { font-size: 11px; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text3); margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 500; font-family: var(--mono); color: var(--text); }
+
+  /* ── Color pickers ── */
+  .color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 8px; }
+  .color-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .color-item input[type=color] {
+    width: 28px;
+    height: 28px;
+    padding: 1px;
+    border: 1px solid var(--border2);
+    border-radius: 5px;
+    cursor: pointer;
+    background: none;
+  }
+  .color-item-name { font-size: 12px; font-family: var(--mono); color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* ── Plot containers ── */
+  .plot-container { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 1rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; overflow: hidden; }
+  .plot-title { font-size: 13px; font-weight: 500; color: var(--text2); font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; }
+
+  /* ── Plate map preview table ── */
+  .platemap-preview th, .platemap-preview td { padding: 4px 8px; font-size: 11px; }
+
+  /* ── Divider ── */
+  hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+
+  /* ── Upload zone ── */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius-lg);
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface);
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--accent); background: var(--accent-light); }
+  .upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-zone p { color: var(--text2); font-size: 14px; }
+  .upload-zone small { color: var(--text3); font-size: 12px; font-family: var(--mono); }
+
+  /* ── Tabs ── */
+  .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 1.25rem; }
+  .tab {
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    color: var(--text3);
+    transition: all 0.15s;
+  }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Spinner ── */
+  .spinner {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── Scrollable well section on 384 ── */
+  .scroll-notice { font-size: 11px; color: var(--text3); font-family: var(--mono); margin-bottom: 8px; }
+
+  /* Plotly override */
+  .js-plotly-plot .plotly { border-radius: var(--radius); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">Growth Analysis</div>
+  <div class="step-indicator">
+    <span id="si1" class="step-dot active"></span>
+    <span id="si2" class="step-dot"></span>
+    <span id="si3" class="step-dot"></span>
+    <span id="si4" class="step-dot"></span>
+    <span style="color:var(--text3);font-size:11px;margin-left:4px" id="step-label">Upload</span>
+  </div>
+</header>
+
+<main>
+
+<!-- ══════════════════════════════════════════════
+     STEP 1: Upload
+══════════════════════════════════════════════ -->
+<div class="step active" id="step1">
+  <div class="page-header">
+    <h1>Upload your data</h1>
+    <p>Upload a plate reader CSV or Excel file to get started.</p>
+  </div>
+
+  <div class="card">
+    <h3>Plate type</h3>
+    <div class="plate-options">
+      <label class="plate-option selected" id="opt96">
+        <input type="radio" name="plateType" value="96" checked>
+        <div class="plate-num">96</div>
+        <div class="plate-label">well plate</div>
+      </label>
+      <label class="plate-option" id="opt384">
+        <input type="radio" name="plateType" value="384">
+        <div class="plate-num">384</div>
+        <div class="plate-label">well plate</div>
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>Data file</h3>
+    <div class="upload-zone" id="uploadZone" onclick="document.getElementById('csvFile').click()">
+      <div class="upload-icon">📊</div>
+      <p>Click to upload or drag & drop</p>
+      <small>CSV, XLS, XLSX — must include a Time column + well columns</small>
+    </div>
+    <input type="file" id="csvFile" accept=".csv,.xls,.xlsx" style="display:none">
+    <div id="uploadStatus" style="margin-top:10px"></div>
+  </div>
+
+  <div id="previewSection" style="display:none">
+    <div class="card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <h3 style="margin-bottom:0">Preview <span id="previewRows"></span></h3>
+        <span id="columnBadge" class="badge badge-green"></span>
+      </div>
+      <div id="errorBox" style="display:none"></div>
+      <div class="table-wrap" id="previewTable"></div>
+    </div>
+    <div class="btn-group">
+      <button class="btn btn-primary" id="continueBtn" onclick="goToStep2()">Continue →</button>
+      <button class="btn btn-secondary" onclick="resetStep1()">Upload different file</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     STEP 2: Name Wells (plate map)
+══════════════════════════════════════════════ -->
+<div class="step" id="step2">
+  <div class="page-header">
+    <h1>Name your wells</h1>
+    <p>Assign sample names to wells. Upload a plate map CSV or fill in the grid manually.</p>
+  </div>
+
+  <div class="card">
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab('upload')">Upload plate map</div>
+      <div class="tab" onclick="switchTab('manual')">Fill manually</div>
+    </div>
+
+    <div class="tab-panel active" id="tab-upload">
+      <div class="alert alert-info" style="margin-bottom:1rem">
+        Plate map CSV: rows = plate rows (A–H or A–P), columns = plate columns (1–12 or 1–24). Cell values = sample names.
+      </div>
+      <div class="form-group">
+        <label>Plate map CSV file</label>
+        <input type="file" id="plateMapFile" accept=".csv">
+      </div>
+      <div id="plateMapPreview" style="display:none">
+        <h3>Plate map preview</h3>
+        <div class="table-wrap" id="plateMapTable"></div>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="tab-manual">
+      <div class="alert alert-info" style="margin-bottom:1rem">
+        Leave cells blank to exclude a well. Wells with names will be included in analysis.
+      </div>
+      <div class="scroll-notice" id="scrollNotice" style="display:none">← Scroll horizontally to see all columns →</div>
+      <div class="well-grid-wrap">
+        <div class="well-grid" id="wellGrid"></div>
+      </div>
+      <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary btn-sm" onclick="clearAllWells()">Clear all</button>
+        <button class="btn btn-secondary btn-sm" onclick="fillSamplePattern()">Fill A1–H12 pattern</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="mapError" style="display:none"></div>
+
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="applyPlateMap()">Apply names →</button>
+    <button class="btn btn-secondary" onclick="goToStep(1)">← Back</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     STEP 3: Review heatmap + well heatmap
+══════════════════════════════════════════════ -->
+<div class="step" id="step3">
+  <div class="page-header">
+    <h1>Data overview</h1>
+    <p>Heatmap of maximum OD values across the plate.</p>
+  </div>
+
+  <div class="plot-container">
+    <div class="plot-title">Max OD heatmap</div>
+    <div id="heatmapPlot"></div>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-primary" onclick="goToStep(4)">Run analysis →</button>
+    <button class="btn btn-secondary" onclick="goToStep(2)">← Back</button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════
+     STEP 4: Results
+══════════════════════════════════════════════ -->
+<div class="step" id="step4">
+  <div class="page-header">
+    <h1>Results</h1>
+    <p>Growth curves, statistics, and download options.</p>
+  </div>
+
+  <!-- Stats row -->
+  <div class="results-grid" id="statCards"></div>
+
+  <!-- Color pickers -->
+  <div class="card card-sm" style="margin-bottom:1.25rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+      <h3 style="margin-bottom:0">Sample colors</h3>
+      <button class="btn btn-secondary btn-sm" onclick="randomizeColors()">Randomize</button>
+    </div>
+    <div class="color-grid" id="colorPickers"></div>
+  </div>
+
+  <!-- Charts -->
+  <div class="plot-container">
+    <div class="plot-title">Optical density over time</div>
+    <div id="linePlot"></div>
+  </div>
+
+  <div class="plot-container">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="plot-title" style="margin-bottom:0">Max growth rate (OD/hr)</div>
+      <button class="btn btn-secondary btn-sm" onclick="downloadPlotPNG('growthPlot','max_growth_rate')">⬇ PNG</button>
+    </div>
+    <div id="growthPlot"></div>
+  </div>
+
+  <div class="plot-container">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <div class="plot-title" style="margin-bottom:0">Area under curve (OD·h)</div>
+      <button class="btn btn-secondary btn-sm" onclick="downloadPlotPNG('aucPlot','area_under_curve')">⬇ PNG</button>
+    </div>
+    <div id="aucPlot"></div>
+  </div>
+
+  <!-- Export — above summary table -->
+  <div class="card card-sm">
+    <h3>Export</h3>
+    <div class="btn-group" style="margin-top:8px">
+      <button class="btn btn-primary" onclick="downloadReport()">⬇ Download HTML report</button>
+      <button class="btn btn-secondary" onclick="downloadCSV()">⬇ Download summary CSV</button>
+    </div>
+  </div>
+
+  <!-- Summary table -->
+  <div class="card">
+    <h3>Summary table</h3>
+    <div class="table-wrap" id="summaryTable"></div>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-danger" onclick="startOver()">Start over</button>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const state = {
+  rawDf: null,        // array of row objects after parse
+  plateType: '96',
+  processedDf: null,  // renamed columns df
+  wellNameMap: {},
+  sampleColors: {},
+  currentStep: 1,
+};
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+const stepLabels = ['Upload','Name wells','Heatmap','Results'];
+
+function goToStep(n) {
+  state.currentStep = n;
+  document.querySelectorAll('.step').forEach((s,i) => s.classList.toggle('active', i+1 === n));
+  document.querySelectorAll('.step-dot').forEach((d,i) => {
+    d.classList.toggle('active', i+1 === n);
+    d.classList.toggle('done', i+1 < n);
+  });
+  document.getElementById('step-label').textContent = stepLabels[n-1];
+  document.body.classList.toggle('results-active', n === 4);
+  // If landing on results, nudge Plotly to refit once the CSS transition settles
+  if (n === 4) {
+    setTimeout(() => {
+      const el = document.getElementById('linePlot');
+      if (el && el.data) Plotly.Plots.resize(el);
+    }, 350);
+  }
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+function goToStep2() {
+  buildWellGrid();
+  goToStep(2);
+}
+
+// ═══════════════════════════════════════════════
+// STEP 1 — FILE UPLOAD
+// ═══════════════════════════════════════════════
+document.querySelectorAll('input[name=plateType]').forEach(r => {
+  r.addEventListener('change', e => {
+    state.plateType = e.target.value;
+    document.getElementById('opt96').classList.toggle('selected', state.plateType === '96');
+    document.getElementById('opt384').classList.toggle('selected', state.plateType === '384');
+  });
+});
+
+document.getElementById('opt96').addEventListener('click', () => {
+  document.querySelector('input[value="96"]').checked = true;
+  state.plateType = '96';
+  document.getElementById('opt96').classList.add('selected');
+  document.getElementById('opt384').classList.remove('selected');
+});
+document.getElementById('opt384').addEventListener('click', () => {
+  document.querySelector('input[value="384"]').checked = true;
+  state.plateType = '384';
+  document.getElementById('opt384').classList.add('selected');
+  document.getElementById('opt96').classList.remove('selected');
+});
+
+const uploadZone = document.getElementById('uploadZone');
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadZone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) processFile(f);
+});
+document.getElementById('csvFile').addEventListener('change', e => {
+  if (e.target.files[0]) processFile(e.target.files[0]);
+});
+
+function processFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  const status = document.getElementById('uploadStatus');
+  status.innerHTML = '<span class="spinner"></span> Reading file…';
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    let rows;
+    try {
+      if (ext === 'csv') {
+        const result = Papa.parse(e.target.result, {header:true, skipEmptyLines:true, dynamicTyping:true});
+        rows = result.data;
+      } else {
+        const wb = XLSX.read(e.target.result, {type:'binary'});
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        rows = XLSX.utils.sheet_to_json(ws, {defval:''});
+      }
+    } catch(err) {
+      status.innerHTML = `<div class="alert alert-error">Failed to read file: ${err.message}</div>`;
+      return;
+    }
+
+    if (!rows || rows.length === 0) {
+      status.innerHTML = `<div class="alert alert-error">File appears to be empty.</div>`;
+      return;
+    }
+
+    // Strip trailing unnamed cols
+    rows = rows.map(row => {
+      const clean = {};
+      for (const [k,v] of Object.entries(row)) {
+        const kk = k.trim();
+        if (!kk.startsWith('Unnamed:') && kk !== '') clean[kk] = v;
+      }
+      return clean;
+    });
+
+    const cols = Object.keys(rows[0]);
+    const expected = state.plateType === '96' ? 97 : 385;
+    const errorBox = document.getElementById('errorBox');
+
+    document.getElementById('previewSection').style.display = 'block';
+    document.getElementById('previewRows').textContent = `(${rows.length} rows)`;
+
+    if (cols.length !== expected) {
+      document.getElementById('columnBadge').textContent = `${cols.length} cols`;
+      document.getElementById('columnBadge').className = 'badge badge-red';
+      errorBox.style.display = 'block';
+      errorBox.innerHTML = `<div class="alert alert-error">Column mismatch: expected ${expected} columns for a ${state.plateType}-well plate but found ${cols.length}. Please check your file or change the plate type.</div>`;
+      document.getElementById('continueBtn').disabled = true;
+      document.getElementById('continueBtn').style.opacity = '0.4';
+    } else {
+      document.getElementById('columnBadge').textContent = `${cols.length} cols ✓`;
+      document.getElementById('columnBadge').className = 'badge badge-green';
+      errorBox.style.display = 'none';
+      document.getElementById('continueBtn').disabled = false;
+      document.getElementById('continueBtn').style.opacity = '1';
+    }
+
+    // Normalize time column
+    rows = normalizeTime(rows);
+
+    state.rawDf = rows;
+    status.innerHTML = `<div class="alert alert-success">Loaded: <strong>${file.name}</strong></div>`;
+    renderPreviewTable(rows.slice(0,15));
+  };
+
+  if (ext === 'csv') reader.readAsText(file);
+  else reader.readAsBinaryString(file);
+}
+
+function normalizeTime(rows) {
+  const keys = Object.keys(rows[0]);
+  let timeKey = keys.find(k => k === 'Time') || keys.find(k => k === 'Duration (Hours)') || keys.find(k => k === 'Duration (Minutes)');
+  if (!timeKey) return rows;
+
+  return rows.map(row => {
+    const newRow = {};
+    for (const [k,v] of Object.entries(row)) {
+      if (k === timeKey) {
+        const val = parseFloat(v);
+        newRow['Time'] = timeKey === 'Duration (Minutes)' ? val/60 : val;
+      } else {
+        newRow[k] = v;
+      }
+    }
+    return newRow;
+  }).filter(r => !isNaN(r['Time']));
+}
+
+function renderPreviewTable(rows) {
+  if (!rows || rows.length === 0) return;
+  const cols = Object.keys(rows[0]).slice(0, 20); // show first 20 cols
+  let html = '<table><thead><tr>';
+  cols.forEach(c => { html += `<th>${c}</th>`; });
+  if (Object.keys(rows[0]).length > 20) html += '<th>…</th>';
+  html += '</tr></thead><tbody>';
+  rows.forEach(row => {
+    html += '<tr>';
+    cols.forEach(c => { html += `<td>${row[c] !== undefined && row[c] !== null ? String(row[c]).substring(0,20) : ''}</td>`; });
+    if (Object.keys(rows[0]).length > 20) html += '<td>…</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  document.getElementById('previewTable').innerHTML = html;
+}
+
+function resetStep1() {
+  document.getElementById('previewSection').style.display = 'none';
+  document.getElementById('uploadStatus').innerHTML = '';
+  document.getElementById('csvFile').value = '';
+  state.rawDf = null;
+}
+
+// ═══════════════════════════════════════════════
+// STEP 2 — PLATE MAP / WELL NAMES
+// ═══════════════════════════════════════════════
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t,i) => t.classList.toggle('active', (i===0 && tab==='upload') || (i===1 && tab==='manual')));
+  document.getElementById('tab-upload').classList.toggle('active', tab==='upload');
+  document.getElementById('tab-manual').classList.toggle('active', tab==='manual');
+}
+
+document.getElementById('plateMapFile').addEventListener('change', function() {
+  const f = this.files[0];
+  if (!f) return;
+  Papa.parse(f, {
+    header: false,
+    skipEmptyLines: false,
+    complete: result => {
+      const data = result.data;
+      // first row = column headers (1,2,3…), first col = row labels (A,B,C…)
+      const headers = data[0].slice(1);
+      let html = '<table class="platemap-preview"><thead><tr><th></th>';
+      headers.forEach(h => { html += `<th>${h}</th>`; });
+      html += '</tr></thead><tbody>';
+      const map = {};
+      for (let i=1; i<data.length; i++) {
+        const rowLabel = String(data[i][0]).trim();
+        if (!rowLabel) continue;
+        html += `<tr><th>${rowLabel}</th>`;
+        for (let j=1; j<data[i].length; j++) {
+          const val = String(data[i][j]||'').trim();
+          const wellId = `${rowLabel}${headers[j-1]||j}`;
+          if (val) map[wellId] = val;
+          html += `<td style="${val?'background:var(--accent-light);color:var(--accent)':''}">${val||''}</td>`;
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      state.wellNameMap = map;
+      document.getElementById('plateMapPreview').style.display = 'block';
+      document.getElementById('plateMapTable').innerHTML = html;
+    }
+  });
+});
+
+function buildWellGrid() {
+  const is96 = state.plateType === '96';
+  const rows = is96 ? 8 : 16;
+  const cols = is96 ? 12 : 24;
+  const rowLabels = Array.from({length:rows}, (_,i) => String.fromCharCode(65+i));
+  const colLabels = Array.from({length:cols}, (_,i) => String(i+1));
+
+  const grid = document.getElementById('wellGrid');
+  grid.className = `well-grid ${is96 ? 'grid-96' : 'grid-384'}`;
+  grid.innerHTML = '';
+
+  if (!is96) document.getElementById('scrollNotice').style.display = 'block';
+
+  // Corner
+  const corner = document.createElement('div');
+  corner.className = 'well-header-cell';
+  grid.appendChild(corner);
+
+  // Col headers
+  colLabels.forEach(cl => {
+    const d = document.createElement('div');
+    d.className = 'well-header-cell';
+    d.style.fontSize = is96 ? '11px' : '9px';
+    d.textContent = cl;
+    grid.appendChild(d);
+  });
+
+  // Rows
+  rowLabels.forEach(rl => {
+    const label = document.createElement('div');
+    label.className = 'well-row-label';
+    label.textContent = rl;
+    grid.appendChild(label);
+    colLabels.forEach(cl => {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.className = 'well-input';
+      inp.dataset.well = `${rl}${cl}`;
+      inp.placeholder = is96 ? '' : '';
+      inp.title = `${rl}${cl}`;
+      if (state.wellNameMap[`${rl}${cl}`]) {
+        inp.value = state.wellNameMap[`${rl}${cl}`];
+        inp.classList.add('filled');
+      }
+      inp.addEventListener('input', function() {
+        this.classList.toggle('filled', this.value.trim() !== '');
+      });
+      grid.appendChild(inp);
+    });
+  });
+}
+
+function clearAllWells() {
+  document.querySelectorAll('.well-input').forEach(i => { i.value=''; i.classList.remove('filled'); });
+}
+
+function fillSamplePattern() {
+  // Demo pattern: well ID as name
+  document.querySelectorAll('.well-input').forEach(i => {
+    i.value = i.dataset.well;
+    i.classList.add('filled');
+  });
+}
+
+function applyPlateMap() {
+  const activeTab = document.querySelector('.tab.active').textContent.trim();
+  let wellNameMap = {};
+
+  if (activeTab === 'Upload plate map') {
+    wellNameMap = state.wellNameMap;
+  } else {
+    document.querySelectorAll('.well-input').forEach(inp => {
+      const val = inp.value.trim();
+      if (val) wellNameMap[inp.dataset.well] = val;
+    });
+  }
+
+  if (Object.keys(wellNameMap).length === 0) {
+    document.getElementById('mapError').style.display = 'block';
+    document.getElementById('mapError').innerHTML = '<div class="alert alert-error">Please provide sample names before continuing.</div>';
+    return;
+  }
+  document.getElementById('mapError').style.display = 'none';
+
+  // Build renamed dataframe
+  const df = state.rawDf;
+  const cols = Object.keys(df[0]);
+  const wells = Object.keys(wellNameMap).filter(w => cols.includes(w));
+  const keepCols = ['Time', ...wells];
+
+  // Rename with duplicate handling
+  const nameCounter = {};
+  const renameMap = {};
+  wells.forEach(well => {
+    const name = wellNameMap[well];
+    nameCounter[name] = (nameCounter[name]||0);
+    renameMap[well] = nameCounter[name] > 0 ? `${name}_${nameCounter[name]}` : name;
+    nameCounter[name]++;
+  });
+
+  const processed = df.map(row => {
+    const newRow = { Time: row['Time'] };
+    wells.forEach(well => {
+      newRow[renameMap[well]] = row[well];
+    });
+    return newRow;
+  });
+
+  state.processedDf = processed;
+  state.wellNameMap = wellNameMap;
+
+  // Assign default colors
+  const uniqueSamples = getUniqueSamples(processed);
+  uniqueSamples.forEach(s => {
+    if (!state.sampleColors[s]) state.sampleColors[s] = stringToColor(s);
+  });
+
+  renderHeatmap();
+  goToStep(3);
+}
+
+// ═══════════════════════════════════════════════
+// STEP 3 — HEATMAP
+// ═══════════════════════════════════════════════
+function renderHeatmap() {
+  const is96 = state.plateType === '96';
+  const rows = is96 ? 8 : 16;
+  const cols = is96 ? 12 : 24;
+  const rowLabels = Array.from({length:rows}, (_,i) => String.fromCharCode(65+i));
+  const colLabels = Array.from({length:cols}, (_,i) => String(i+1));
+
+  const df = state.rawDf;
+  const dfCols = Object.keys(df[0]).filter(c => c !== 'Time');
+  const wellCols = dfCols.slice(0, rows*cols);
+
+  const maxVals = {};
+  wellCols.forEach(col => {
+    const vals = df.map(r => parseFloat(r[col])).filter(v => !isNaN(v));
+    maxVals[col] = vals.length ? Math.max(...vals) : 0;
+  });
+
+  const zData = [];
+  const textData = [];
+  for (let r=0; r<rows; r++) {
+    const rowZ = [], rowText = [];
+    for (let c=0; c<cols; c++) {
+      const col = wellCols[r*cols+c];
+      const v = col !== undefined ? (maxVals[col]||0) : 0;
+      rowZ.push(v);
+      rowText.push(col ? `${col}<br>Max: ${v.toFixed(3)}` : '');
+    }
+    zData.push(rowZ);
+    textData.push(rowText);
+  }
+
+  const layout = {
+    margin: {l:50, r:20, t:20, b:40},
+    xaxis: {tickvals: colLabels.map((_,i)=>i), ticktext: colLabels, side:'top', fixedrange:true},
+    yaxis: {tickvals: rowLabels.map((_,i)=>i), ticktext: rowLabels, autorange:'reversed', fixedrange:true},
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    height: is96 ? 340 : 520,
+  };
+
+  Plotly.newPlot('heatmapPlot', [{
+    type: 'heatmap',
+    z: zData,
+    colorscale: 'YlOrRd',
+    xgap: 2, ygap: 2,
+    hovertemplate: '%{text}<extra></extra>',
+    text: textData,
+    showscale: true,
+  }], layout, {displayModeBar:false, responsive:true});
+}
+
+// ═══════════════════════════════════════════════
+// STEP 4 — RESULTS
+// ═══════════════════════════════════════════════
+function goToStep4() {
+  renderResults();
+  goToStep(4);
+}
+
+document.getElementById('step3').querySelector('.btn-primary').addEventListener('click', () => {
+  renderResults();
+  goToStep(4);
+});
+
+function renderResults() {
+  buildColorPickers();
+  renderLinePlot();
+  renderGrowthPlot();
+  renderAUCPlot();
+  renderStatCards();
+  renderSummaryTable();
+}
+
+function getUniqueSamples(df) {
+  const cols = Object.keys(df[0]).filter(c => c !== 'Time');
+  const bases = new Set(cols.map(c => c.replace(/_\d+$/, '')));
+  return [...bases].sort(naturalSort);
+}
+
+function naturalSort(a, b) {
+  const parse = s => { const m = s.match(/^([A-Za-z]+)(\d+)$/); return m ? [m[1], parseInt(m[2])] : [s, 0]; };
+  const [al, an] = parse(a), [bl, bn] = parse(b);
+  return al < bl ? -1 : al > bl ? 1 : an - bn;
+}
+
+function stringToColor(s) {
+  let h = 0;
+  for (let i=0; i<s.length; i++) h = ((h<<5)-h)+s.charCodeAt(i);
+  const hue = ((h % 360) + 360) % 360;
+  return `hsl(${hue},55%,45%)`;
+}
+
+function buildColorPickers() {
+  const samples = getUniqueSamples(state.processedDf);
+  const container = document.getElementById('colorPickers');
+  container.innerHTML = '';
+  samples.forEach(s => {
+    const color = state.sampleColors[s] || stringToColor(s);
+    const div = document.createElement('div');
+    div.className = 'color-item';
+    div.innerHTML = `<input type="color" value="${hslToHex(color)}" data-sample="${s}">
+      <span class="color-item-name" title="${s}">${s}</span>`;
+    div.querySelector('input').addEventListener('input', function() {
+      state.sampleColors[this.dataset.sample] = this.value;
+      renderLinePlot(); renderGrowthPlot(); renderAUCPlot();
+    });
+    container.appendChild(div);
+  });
+}
+
+function randomizeColors() {
+  const samples = getUniqueSamples(state.processedDf);
+  samples.forEach(s => {
+    const h = Math.floor(Math.random()*360);
+    state.sampleColors[s] = `hsl(${h},55%,45%)`;
+  });
+  buildColorPickers();
+  renderLinePlot(); renderGrowthPlot(); renderAUCPlot();
+}
+
+function hslToHex(hsl) {
+  if (hsl.startsWith('#')) return hsl;
+  const m = hsl.match(/hsl\((\d+),(\d+)%,(\d+)%\)/);
+  if (!m) return '#888888';
+  let h=parseInt(m[1])/360, s=parseInt(m[2])/100, l=parseInt(m[3])/100;
+  let r,g,b;
+  if (s===0) { r=g=b=l; } else {
+    const q = l<0.5 ? l*(1+s) : l+s-l*s, p=2*l-q;
+    const hue2rgb = (p,q,t) => { if(t<0)t+=1;if(t>1)t-=1;if(t<1/6)return p+(q-p)*6*t;if(t<1/2)return q;if(t<2/3)return p+(q-p)*(2/3-t)*6;return p; };
+    r=hue2rgb(p,q,h+1/3); g=hue2rgb(p,q,h); b=hue2rgb(p,q,h-1/3);
+  }
+  return '#'+[r,g,b].map(x=>Math.round(x*255).toString(16).padStart(2,'0')).join('');
+}
+
+function groupByTime(df, sample) {
+  const cols = Object.keys(df[0]).filter(c => c === sample || c.match(new RegExp(`^${escRe(sample)}_\\d+$`)));
+  const byTime = {};
+  df.forEach(row => {
+    const t = row.Time;
+    if (!byTime[t]) byTime[t] = [];
+    cols.forEach(c => { const v=parseFloat(row[c]); if(!isNaN(v)) byTime[t].push(v); });
+  });
+  const times = Object.keys(byTime).map(Number).sort((a,b)=>a-b);
+  return times.map(t => ({
+    t,
+    mean: byTime[t].reduce((a,b)=>a+b,0)/byTime[t].length,
+    std: byTime[t].length > 1 ? Math.sqrt(byTime[t].map(v=>(v-byTime[t].reduce((a,b)=>a+b,0)/byTime[t].length)**2).reduce((a,b)=>a+b,0)/(byTime[t].length-1)) : 0
+  }));
+}
+
+function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
+
+function renderLinePlot() {
+  const samples = getUniqueSamples(state.processedDf);
+  const traces = samples.map(s => {
+    const grouped = groupByTime(state.processedDf, s);
+    const color = state.sampleColors[s] || stringToColor(s);
+    return {
+      x: grouped.map(d=>d.t),
+      y: grouped.map(d=>d.mean),
+      error_y: { type:'data', array: grouped.map(d=>d.std), visible:true, color:color, thickness:1.2, width:3 },
+      mode: 'lines+markers',
+      name: s,
+      line: {color, width:2},
+      marker: {color, size:5},
+      hovertemplate: `<b>${s}</b><br>Time: %{x:.2f}h<br>OD: %{y:.4f}<extra></extra>`,
+    };
+  });
+
+  const layout = {
+    margin: {l:60, r:30, t:20, b:60},
+    xaxis: { title:{text:'Time (hours)', font:{size:12}}, mirror:true, showline:true, linecolor:'#ccc', ticks:'outside', gridcolor:'#f0efe9' },
+    yaxis: { title:{text:'OD600nm', font:{size:12}}, mirror:true, showline:true, linecolor:'#ccc', ticks:'outside', gridcolor:'#f0efe9' },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(0,0,0,0)',
+    legend: {bgcolor:'rgba(0,0,0,0)', borderwidth:0, font:{size:11}},
+    height: 580,
+    autosize: true,
+    font: {family: 'DM Mono, monospace', size:11, color:'#6b6860'},
+  };
+
+  const plotEl = document.getElementById('linePlot');
+  Plotly.newPlot(plotEl, traces, layout, {
+    responsive: true,
+    displaylogo: false,
+    modeBarButtonsToRemove: ['select2d','lasso2d'],
+    doubleClick: false,
+  });
+
+  // Wait for the CSS max-width transition (300ms) to finish, then tell Plotly to refit
+  setTimeout(() => Plotly.Plots.resize(plotEl), 350);
+
+  // Double-click on a trace: isolate it (show only that one). Double-click again: restore all.
+  plotEl.removeAllListeners && plotEl.removeAllListeners('plotly_doubleclick');
+  plotEl.on('plotly_doubleclick', () => {
+    // no-op: suppress default zoom-reset on empty canvas double-click
+  });
+
+  // Use legend double-click to isolate/restore
+  plotEl.removeAllListeners && plotEl.removeAllListeners('plotly_legenddoubleclick');
+  plotEl.on('plotly_legenddoubleclick', evt => {
+    const clickedIdx = evt.curveNumber;
+    const currentData = plotEl.data;
+    const allHidden = currentData.every((t, i) => i === clickedIdx ? true : t.visible === 'legendonly');
+    const allVisible = currentData.every(t => t.visible !== 'legendonly');
+    const update = { visible: [] };
+    if (allHidden || allVisible) {
+      // isolate clicked trace
+      currentData.forEach((_, i) => { update.visible.push(i === clickedIdx ? true : 'legendonly'); });
+    } else {
+      // restore all
+      currentData.forEach(() => { update.visible.push(true); });
+    }
+    Plotly.restyle(plotEl, update);
+    return false;
+  });
+}
+
+function calcMaxGrowthRate(df) {
+  const allCols = Object.keys(df[0]).filter(c => c !== 'Time');
+  const result = {};
+  allCols.forEach(col => {
+    const base = col.replace(/_\d+$/, '');
+    const sorted = [...df].sort((a,b)=>a.Time-b.Time);
+    let maxRate = 0;
+    for (let i=1; i<sorted.length; i++) {
+      const dt = sorted[i].Time - sorted[i-1].Time;
+      if (dt <= 0) continue;
+      const dod = parseFloat(sorted[i][col]) - parseFloat(sorted[i-1][col]);
+      const rate = Math.max(0, dod/dt);
+      if (!isNaN(rate)) maxRate = Math.max(maxRate, rate);
+    }
+    if (!result[base]) result[base] = [];
+    result[base].push(maxRate);
+  });
+  return result;
+}
+
+function calcAUC(df) {
+  const allCols = Object.keys(df[0]).filter(c => c !== 'Time');
+  const result = {};
+  allCols.forEach(col => {
+    const base = col.replace(/_\d+$/, '');
+    const sorted = [...df].sort((a,b)=>a.Time-b.Time).filter(r=>!isNaN(parseFloat(r[col])));
+    let auc = 0;
+    for (let i=1; i<sorted.length; i++) {
+      const dt = sorted[i].Time - sorted[i-1].Time;
+      auc += ((parseFloat(sorted[i][col]) + parseFloat(sorted[i-1][col]))/2) * dt;
+    }
+    if (!result[base]) result[base] = [];
+    result[base].push(auc);
+  });
+  return result;
+}
+
+function meanStd(arr) {
+  const m = arr.reduce((a,b)=>a+b,0)/arr.length;
+  const s = arr.length > 1 ? Math.sqrt(arr.map(v=>(v-m)**2).reduce((a,b)=>a+b,0)/(arr.length-1)) : 0;
+  return {mean:m, std:s};
+}
+
+function renderGrowthPlot() {
+  const growthData = calcMaxGrowthRate(state.processedDf);
+  const samples = Object.keys(growthData).sort(naturalSort);
+  const means = samples.map(s=>meanStd(growthData[s]).mean);
+  const stds = samples.map(s=>meanStd(growthData[s]).std);
+  const colors = samples.map(s=>state.sampleColors[s]||stringToColor(s));
+
+  const layout = {
+    margin:{l:60,r:30,t:20,b:100},
+    xaxis:{tickangle:-40, tickfont:{size:11}},
+    yaxis:{title:{text:'OD/hr',font:{size:12}}, gridcolor:'#f0efe9'},
+    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+  };
+
+  Plotly.newPlot('growthPlot', [{
+    type:'bar', x:samples, y:means,
+    error_y:{type:'data',array:stds,visible:true},
+    text:means.map(v=>v.toFixed(4)), textposition:'auto',
+    textfont:{size:9},
+    marker:{color:colors},
+    hovertemplate:'<b>%{x}</b><br>%{y:.4f} OD/hr<extra></extra>',
+  }], layout, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
+}
+
+function renderAUCPlot() {
+  const aucData = calcAUC(state.processedDf);
+  const samples = Object.keys(aucData).sort(naturalSort);
+  const means = samples.map(s=>meanStd(aucData[s]).mean);
+  const stds = samples.map(s=>meanStd(aucData[s]).std);
+  const colors = samples.map(s=>state.sampleColors[s]||stringToColor(s));
+
+  const layout = {
+    margin:{l:65,r:30,t:20,b:100},
+    xaxis:{tickangle:-40,tickfont:{size:11}},
+    yaxis:{title:{text:'OD·h',font:{size:12}},gridcolor:'#f0efe9'},
+    paper_bgcolor:'rgba(0,0,0,0)',plot_bgcolor:'rgba(0,0,0,0)',
+    height:380, font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+  };
+
+  Plotly.newPlot('aucPlot', [{
+    type:'bar', x:samples, y:means,
+    error_y:{type:'data',array:stds,visible:true},
+    text:means.map(v=>v.toFixed(3)), textposition:'auto',
+    textfont:{size:9},
+    marker:{color:colors},
+    hovertemplate:'<b>%{x}</b><br>%{y:.3f} OD·h<extra></extra>',
+  }], layout, {responsive:true, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d']});
+}
+
+function renderStatCards() {
+  const samples = getUniqueSamples(state.processedDf);
+  const growthData = calcMaxGrowthRate(state.processedDf);
+  const aucData = calcAUC(state.processedDf);
+
+  const allGrowth = Object.values(growthData).flat().filter(v=>!isNaN(v)&&v>0);
+  const topSample = Object.entries(growthData).sort((a,b)=>meanStd(b[1]).mean-meanStd(a[1]).mean)[0];
+
+  const html = `
+    <div class="stat-card">
+      <div class="stat-label">Samples analyzed</div>
+      <div class="stat-value">${samples.length}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Fastest grower</div>
+      <div class="stat-value" style="font-size:18px;word-break:break-all">${topSample ? topSample[0] : '—'}</div>
+    </div>
+  `;
+  document.getElementById('statCards').innerHTML = html;
+}
+
+function renderSummaryTable() {
+  const growthData = calcMaxGrowthRate(state.processedDf);
+  const aucData = calcAUC(state.processedDf);
+  const samples = [...new Set([...Object.keys(growthData), ...Object.keys(aucData)])].sort(naturalSort);
+
+  let html = '<table><thead><tr><th>Sample</th><th>Mean max growth rate (OD/hr)</th><th>Std dev growth rate</th><th>Mean AUC (OD·h)</th><th>Std dev AUC</th></tr></thead><tbody>';
+  samples.forEach(s => {
+    const g = growthData[s] ? meanStd(growthData[s]) : {mean:0,std:0};
+    const a = aucData[s] ? meanStd(aucData[s]) : {mean:0,std:0};
+    html += `<tr><td><strong>${s}</strong></td><td>${g.mean.toFixed(4)}</td><td>${g.std.toFixed(4)}</td><td>${a.mean.toFixed(3)}</td><td>${a.std.toFixed(3)}</td></tr>`;
+  });
+  html += '</tbody></table>';
+  document.getElementById('summaryTable').innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
+// DOWNLOADS
+// ═══════════════════════════════════════════════
+
+// Properly quote a CSV field — wraps in quotes if it contains comma, quote, or newline
+function csvField(val) {
+  const s = String(val ?? '');
+  return (s.includes(',') || s.includes('"') || s.includes('\n')) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+
+function buildSummaryCSV() {
+  const growthData = calcMaxGrowthRate(state.processedDf);
+  const aucData = calcAUC(state.processedDf);
+  const samples = [...new Set([...Object.keys(growthData), ...Object.keys(aucData)])].sort(naturalSort);
+  let csv = 'Sample,Mean Max Growth Rate (OD/hr),Std Dev Growth Rate,Mean AUC (OD·h),Std Dev AUC\n';
+  samples.forEach(s => {
+    const g = growthData[s] ? meanStd(growthData[s]) : {mean:0,std:0};
+    const a = aucData[s] ? meanStd(aucData[s]) : {mean:0,std:0};
+    csv += `${csvField(s)},${g.mean.toFixed(4)},${g.std.toFixed(4)},${a.mean.toFixed(3)},${a.std.toFixed(3)}\n`;
+  });
+  return csv;
+}
+
+function downloadCSV() {
+  triggerDownload(new Blob([buildSummaryCSV()],{type:'text/csv'}), 'growth_summary.csv');
+}
+
+function downloadPlotPNG(divId, filename) {
+  Plotly.downloadImage(document.getElementById(divId), {format:'png', filename, width:1200, height:500, scale:2});
+}
+
+function downloadReport() {
+  const lineDiv = document.getElementById('linePlot').innerHTML;
+  const growthDiv = document.getElementById('growthPlot').innerHTML;
+  const aucDiv = document.getElementById('aucPlot').innerHTML;
+  const heatmapDiv = document.getElementById('heatmapPlot').innerHTML;
+  const summaryHtml = document.getElementById('summaryTable').innerHTML;
+  const csv = buildSummaryCSV();
+  const csvUrl = `data:text/csv;charset=utf-8,${encodeURIComponent(csv)}`;
+
+  const report = `<!DOCTYPE html><html><head><meta charset="UTF-8">
+<title>Growth Analysis Report</title>
+<script src="https://cdn.jsdelivr.net/npm/plotly.js-dist@2.27.0/plotly.min.js"><\/script>
+<style>
+body{font-family:sans-serif;max-width:1200px;margin:2rem auto;padding:0 1rem;color:#1a1916}
+h1{font-size:26px;margin-bottom:4px} h2{font-size:18px;margin:2rem 0 8px;color:#444}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:#f5f5f0;padding:8px 12px;text-align:left;border-bottom:1px solid #ddd}
+td{padding:7px 12px;border-bottom:1px solid #eee}
+.dl{display:inline-block;margin:10px 0;padding:9px 18px;background:#2d5a3d;color:white;border-radius:6px;text-decoration:none;font-size:14px}
+hr{border:none;border-top:1px solid #eee;margin:2rem 0}
+</style></head><body>
+<h1>Growth Analysis Report</h1>
+<p style="color:#666;font-size:13px">Generated ${new Date().toLocaleString()}</p>
+<hr>
+<h2>Summary Data</h2>
+${summaryHtml}
+<a href="${csvUrl}" download="growth_summary.csv" class="dl">⬇ Download summary CSV</a>
+<hr>
+<h2>Optical Density Over Time</h2><div>${lineDiv}</div>
+<hr>
+<h2>Plate Heatmap (Max OD)</h2><div>${heatmapDiv}</div>
+<hr>
+<h2>Max Growth Rate</h2><div>${growthDiv}</div>
+<hr>
+<h2>Area Under Curve</h2><div>${aucDiv}</div>
+</body></html>`;
+
+  triggerDownload(new Blob([report],{type:'text/html'}), 'growth_analysis_report.html');
+}
+
+function triggerDownload(blob, filename) {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function startOver() {
+  state.rawDf = null;
+  state.processedDf = null;
+  state.wellNameMap = {};
+  state.sampleColors = {};
+  document.getElementById('csvFile').value = '';
+  document.getElementById('uploadStatus').innerHTML = '';
+  document.getElementById('previewSection').style.display = 'none';
+  goToStep(1);
+}
+</script>
+</body>
+</html>
