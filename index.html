@@ -580,7 +580,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
       <div class="plot-title" style="margin-bottom:0">Max growth rate (OD/hr)</div>
       <button class="btn btn-secondary btn-sm" onclick="downloadPlotPNG('growthPlot','max_growth_rate')">⬇ PNG</button>
     </div>
-    <div id="growthPlot"></div>
+    <div id="growthPlotScroll" style="overflow-x:auto;overflow-y:hidden;"><div id="growthPlot"></div></div>
   </div>
 
   <div class="plot-container">
@@ -588,7 +588,7 @@ hr { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
       <div class="plot-title" style="margin-bottom:0">Area under curve (OD·h)</div>
       <button class="btn btn-secondary btn-sm" onclick="downloadPlotPNG('aucPlot','area_under_curve')">⬇ PNG</button>
     </div>
-    <div id="aucPlot"></div>
+    <div id="aucPlotScroll" style="overflow-x:auto;overflow-y:hidden;"><div id="aucPlot"></div></div>
   </div>
 
   <div class="card card-sm">
@@ -1058,32 +1058,36 @@ function meanStd(arr) {
   return {mean:m, std:s};
 }
 
-function barPlotWidth(n) {
-  // Each bar gets 42px min; total includes left/right margins (95px)
-  return Math.max(500, 95 + n * 42);
-}
-
 function barBottomMargin(samples) {
+  // Label bottom margin: ~5.5px per char at -45deg, capped
   const maxLen = Math.max(...samples.map(s => s.length));
-  return Math.max(100, Math.min(220, 50 + maxLen * 5));
+  return Math.max(110, Math.min(240, 55 + maxLen * 5.5));
 }
 
 function renderBarChart(divId, traces, yTitle) {
   const samples = traces[0].x;
-  const plotWidth = barPlotWidth(samples.length);
+  const n = samples.length;
   const bottomMargin = barBottomMargin(samples);
-  const container = document.getElementById(divId).parentElement;
-  container.style.overflowX = 'auto';
+
+  // Width: give each bar 48px of space, plus fixed margins (l=70, r=30)
+  // This guarantees every bar is always visible regardless of screen width
+  const PX_PER_BAR = 48;
+  const L_MARGIN = 70, R_MARGIN = 30;
+  const plotWidth = L_MARGIN + R_MARGIN + n * PX_PER_BAR;
+
+  const divEl = document.getElementById(divId);
+  // Set the Plotly div to exactly the computed width so it never clips
+  divEl.style.width = plotWidth + 'px';
 
   Plotly.newPlot(divId, traces, {
-    margin:{l:65,r:20,t:20,b:bottomMargin},
+    margin:{l:L_MARGIN, r:R_MARGIN, t:20, b:bottomMargin},
     xaxis:{tickangle:-45, tickfont:{size:11}, automargin:false},
-    yaxis:{title:{text:yTitle,font:{size:12}}, gridcolor:'#f0efe9'},
+    yaxis:{title:{text:yTitle, font:{size:12}}, gridcolor:'#f0efe9'},
     paper_bgcolor:'rgba(0,0,0,0)', plot_bgcolor:'rgba(0,0,0,0)',
-    bargap: 0.25,
+    bargap: 0.3,
     width: plotWidth,
-    height: 420,
-    font:{family:'DM Mono, monospace',size:11,color:'#6b6860'},
+    height: Math.max(380, 260 + bottomMargin),
+    font:{family:'DM Mono, monospace', size:11, color:'#6b6860'},
   }, {responsive:false, displaylogo:false, modeBarButtonsToRemove:['select2d','lasso2d','toImage']});
 }
 
@@ -1153,7 +1157,12 @@ function buildSummaryCSV() {
 }
 
 function downloadCSV() { triggerDownload(new Blob([buildSummaryCSV()],{type:'text/csv'}), 'growth_summary.csv'); }
-function downloadPlotPNG(divId, filename) { Plotly.downloadImage(document.getElementById(divId), {format:'png', filename, width:1200, height:500, scale:2}); }
+function downloadPlotPNG(divId, filename) {
+  const el = document.getElementById(divId);
+  const w = el._fullLayout ? Math.round(el._fullLayout.width) : 1200;
+  const h = el._fullLayout ? Math.round(el._fullLayout.height) : 500;
+  Plotly.downloadImage(el, {format:'png', filename, width:w, height:h, scale:2});
+}
 
 function downloadReport() {
   const lineDiv = document.getElementById('linePlot').innerHTML;
